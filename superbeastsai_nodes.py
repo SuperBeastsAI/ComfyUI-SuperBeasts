@@ -94,12 +94,20 @@ def apply_gamma_correction(lum_array, intensity, base_gamma):
     adjusted = 255 * (lum_array / 255) ** gamma
     return np.clip(adjusted, 0, 255).astype(np.uint8)
 
-
+# create a wrapper function that can apply a function to multiple images in a batch while passing all other arguments to the function
+def apply_to_batch(func):
+    def wrapper(self, image, *args, **kwargs):
+        images = []
+        for img in image:
+            images.append(func(self, img, *args, **kwargs))
+        batch_tensor = torch.cat(images, dim=0)
+        return (batch_tensor, )
+    return wrapper
 
 class HDREffects:
     @classmethod
     def INPUT_TYPES(cls):
-        return {'required': {'input_image': ('IMAGE', {'default': None}),
+        return {'required': {'image': ('IMAGE', {'default': None}),
                              'hdr_intensity': ('FLOAT', {'default': 0.5, 'min': 0.0, 'max': 5.0, 'step': 0.01}),
                              'shadow_intensity': ('FLOAT', {'default': 0.25, 'min': 0.0, 'max': 1.0, 'step': 0.01}),
                              'highlight_intensity': ('FLOAT', {'default': 0.75, 'min': 0.0, 'max': 1.0, 'step': 0.01}),
@@ -112,10 +120,11 @@ class HDREffects:
     RETURN_NAMES = ('result_img',)
     FUNCTION = 'apply_hdr2'
     CATEGORY = 'SuperBeastsAI/Image'
-
-    def apply_hdr2(self, input_image, hdr_intensity=0.5, shadow_intensity=0.25, highlight_intensity=0.75, gamma_intensity=0.25, contrast=0.1, enhance_color=0.25):
+    
+    @apply_to_batch
+    def apply_hdr2(self, image, hdr_intensity=0.5, shadow_intensity=0.25, highlight_intensity=0.75, gamma_intensity=0.25, contrast=0.1, enhance_color=0.25):
         # Load the image
-        img = tensor2pil(input_image)
+        img = tensor2pil(image)
         
         # Step 1: Convert RGB to LAB for better color preservation
         img_lab = ImageCms.profileToProfile(img, sRGB_profile, Lab_profile, outputMode='LAB')
@@ -153,8 +162,7 @@ class HDREffects:
         enhancer = ImageEnhance.Color(contrast_adjusted)
         color_adjusted = enhancer.enhance(1 + enhance_color * 0.2)
          
-        result_img = pil2tensor(color_adjusted)
-        return result_img,
+        return pil2tensor(color_adjusted)
 
 NODE_CLASS_MAPPINGS = {
     'HDR Effects (SuperBeasts.AI)': HDREffects
