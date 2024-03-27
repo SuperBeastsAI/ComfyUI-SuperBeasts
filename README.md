@@ -15,7 +15,15 @@ The HDR Effects is an image processing application that enhances the dynamic ran
 - Utilizes luminance-based masks for targeted adjustments
 - Blends the adjusted luminance with the original luminance for a balanced effect
 
-### Parameters
+## Examples
+
+![Example 1](examples/ex1.png)
+
+
+![Example 2](examples/ex2.png)
+
+
+### Parameter details
 
 The application provides the following adjustable parameters:
 
