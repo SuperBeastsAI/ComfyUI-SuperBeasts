@@ -50,3 +50,6 @@ The application provides the following adjustable parameters:
 - `enhance_color` (default: 0.25, range: 0.0 to 1.0, step: 0.01):
   - Enhances the color saturation of the image
   - Higher values result in more vibrant colors
+ 
+##Updates
+- 27/03/24: Released and also pushed an update to resolve batched images for videos etc
