@@ -91,9 +91,10 @@ def apply_gamma_correction(lum_array, intensity, base_gamma):
         return lum_array
 
     gamma = 1 + (base_gamma - 1) * intensity  # Scale gamma based on intensity.
-    adjusted = 255 * (lum_array / 255) ** gamma
+    epsilon = 1e-7  # Small value to avoid dividing by zero
+    adjusted = 255 * ((lum_array + epsilon) / (255 + epsilon)) ** gamma
     return np.clip(adjusted, 0, 255).astype(np.uint8)
-
+    
 # create a wrapper function that can apply a function to multiple images in a batch while passing all other arguments to the function
 def apply_to_batch(func):
     def wrapper(self, image, *args, **kwargs):
