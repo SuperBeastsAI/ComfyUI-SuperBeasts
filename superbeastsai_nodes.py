@@ -79,20 +79,18 @@ def merge_adjustments_with_blend_modes(luminance, shadows, highlights, hdr_inten
 
     return Image.fromarray(final_luminance)
 
-
-def apply_gamma_correction(lum_array, intensity, base_gamma):
+def apply_gamma_correction(lum_array, gamma):
     """
     Apply gamma correction to the luminance array.
     :param lum_array: Luminance channel as a NumPy array.
-    :param intensity: HDR intensity factor.
-    :param base_gamma: Base gamma value for correction.
+    :param gamma: Gamma value for correction.
     """
-    if intensity == 0:  # If intensity is 0, return the array as is.
-        return lum_array
+    if gamma == 0:
+        return np.clip(lum_array, 0, 255).astype(np.uint8)
 
-    gamma = 1 + (base_gamma - 1) * intensity  # Scale gamma based on intensity.
     epsilon = 1e-7  # Small value to avoid dividing by zero
-    adjusted = 255 * ((lum_array + epsilon) / (255 + epsilon)) ** gamma
+    gamma_corrected = 1 / (1.1 - gamma)
+    adjusted = 255 * ((lum_array / 255) ** gamma_corrected)
     return np.clip(adjusted, 0, 255).astype(np.uint8)
     
 # create a wrapper function that can apply a function to multiple images in a batch while passing all other arguments to the function
@@ -112,7 +110,7 @@ class HDREffects:
                              'hdr_intensity': ('FLOAT', {'default': 0.5, 'min': 0.0, 'max': 5.0, 'step': 0.01}),
                              'shadow_intensity': ('FLOAT', {'default': 0.25, 'min': 0.0, 'max': 1.0, 'step': 0.01}),
                              'highlight_intensity': ('FLOAT', {'default': 0.75, 'min': 0.0, 'max': 1.0, 'step': 0.01}),
-                             'gamma_intensity': ('FLOAT', {'default': 0.25, 'min': 0.0, 'max': 1.0, 'step': 0.01}),
+                             'gamma_intensity': ('FLOAT', {'default': 0.0, 'min': 0.0, 'max': 1.0, 'step': 0.01}),
                              'contrast': ('FLOAT', {'default': 0.1, 'min': 0.0, 'max': 1.0, 'step': 0.01}),
                              'enhance_color': ('FLOAT', {'default': 0.25, 'min': 0.0, 'max': 1.0, 'step': 0.01})
                              }}
@@ -145,10 +143,12 @@ class HDREffects:
         merged_adjustments = merge_adjustments_with_blend_modes(lum_array, shadows_adjusted, highlights_adjusted, hdr_intensity, shadow_intensity, highlight_intensity)
 
         # Apply gamma correction with a base_gamma value (define based on desired effect)
-        gamma_corrected = apply_gamma_correction(np.array(merged_adjustments), hdr_intensity, gamma_intensity)
+        gamma_corrected = apply_gamma_correction(np.array(merged_adjustments), gamma_intensity)
+        gamma_corrected = Image.fromarray(gamma_corrected).resize(a.size)
+
 
         # Merge L channel back with original A and B channels
-        adjusted_lab = Image.merge('LAB', (merged_adjustments, a, b))
+        adjusted_lab = Image.merge('LAB', (gamma_corrected, a, b))
 
         # Step 3: Convert LAB back to RGB
         img_adjusted = ImageCms.profileToProfile(adjusted_lab, Lab_profile, sRGB_profile, outputMode='RGB')
