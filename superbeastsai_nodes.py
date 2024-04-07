@@ -240,12 +240,186 @@ class MakeResizedMaskBatch:
 
         return (result,)
 
+
+
+def adjust_brightness(image, brightness_factor):
+    enhancer = ImageEnhance.Brightness(image)
+    adjusted_image = enhancer.enhance(brightness_factor)
+    return adjusted_image
+
+def calculate_brightness_factor(target_brightness, current_brightness):
+    return target_brightness / current_brightness
+
+def get_average_brightness(image):
+    grayscale_image = image.convert("L")
+    histogram = grayscale_image.histogram()
+    pixels = sum(histogram)
+    brightness = scale = len(histogram)
+
+    total_brightness = sum(i * w for i, w in enumerate(histogram))
+    return total_brightness / pixels
+
+def apply_dithering(image):
+    return image.convert("P", palette=Image.ADAPTIVE, colors=256).convert("RGB")
+
+def apply_noise_reduction(image, strength):
+    return image.filter(ImageFilter.GaussianBlur(radius=strength))
+
+def apply_gradient_smoothing(image, strength):
+    return image.filter(ImageFilter.SMOOTH_MORE if strength > 1 else ImageFilter.SMOOTH)
+
+def blend_images(image1, image2, alpha):
+    return Image.blend(image1, image2, alpha)
+
+class Deflicker:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "images": ("IMAGE",),
+                "context_length": ("INT", {"default": 5, "min": 1, "max": 20, "step": 1}),
+                "brightness_threshold": ("FLOAT", {"default": 0.05, "min": 0.01, "max": 0.5, "step": 0.01}),
+                "blending_strength": ("FLOAT", {"default": 0.1, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "noise_reduction_strength": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 5.0, "step": 0.1}),
+                "gradient_smoothing_strength": ("INT", {"default": 1, "min": 0, "max": 3, "step": 1}),
+                "batch_size": ("INT", {"default": 10, "min": 1, "max": 100, "step": 1})
+            }
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "deflicker"
+    CATEGORY = "SuperBeastsAI/Animation"
+
+    def deflicker(self, images, context_length=5, brightness_threshold=0.05, blending_strength=0.5,
+                  noise_reduction_strength=1.0, gradient_smoothing_strength=1, batch_size=10):
+        num_frames = len(images)
+        adjusted_tensor = []
+
+        for i in range(0, num_frames, batch_size):
+            batch_images = images[i:i+batch_size]
+
+            # Convert batch tensor to a list of PIL images
+            pil_images = [tensor2pil(image) for image in batch_images]
+
+            adjusted_images = []
+
+            for j in range(len(pil_images)):
+                current_image = pil_images[j]
+                context_start = max(0, i + j - context_length // 2)
+                context_end = min(num_frames, i + j + context_length // 2 + 1)
+                context_images = images[context_start:context_end]
+
+                current_brightness = get_average_brightness(current_image)
+                context_brightnesses = [get_average_brightness(tensor2pil(img)) for img in context_images]
+                average_brightness = np.mean(context_brightnesses)
+
+                if abs(current_brightness - average_brightness) > brightness_threshold:
+                    brightness_factor = calculate_brightness_factor(average_brightness, current_brightness)
+                    adjusted_image = adjust_brightness(current_image, brightness_factor)
+                else:
+                    adjusted_image = current_image
+
+                # Apply noise reduction to the adjusted image
+                denoised_image = apply_noise_reduction(adjusted_image, noise_reduction_strength)
+
+                # Apply gradient smoothing to the denoised image
+                smoothed_image = apply_gradient_smoothing(denoised_image, gradient_smoothing_strength)
+
+                # Apply dithering to the smoothed image
+                dithered_image = apply_dithering(smoothed_image)
+
+                # Blend the dithered image with the original image using adaptive blending
+                blending_alpha = min(1.0, blending_strength * (1.0 + abs(current_brightness - average_brightness)))
+                blended_image = blend_images(current_image, dithered_image, blending_alpha)
+
+                adjusted_images.append(blended_image)
+
+            # Convert the adjusted PIL images back to a tensor
+            adjusted_batch_tensor = torch.cat([pil2tensor(img) for img in adjusted_images], dim=0)
+            adjusted_tensor.append(adjusted_batch_tensor)
+
+        # Concatenate the adjusted batches along the first dimension
+        adjusted_tensor = torch.cat(adjusted_tensor, dim=0)
+
+        return (adjusted_tensor,)
+
+
+def temporal_smoothing(frames, window_size):
+    num_frames = len(frames)
+    smoothed_frames = []
+
+    for i in range(num_frames):
+        start = max(0, i - window_size // 2)
+        end = min(num_frames, i + window_size // 2 + 1)
+        window_frames = frames[start:end]
+
+        smoothed_frame = np.mean(window_frames, axis=0)
+        smoothed_frames.append(smoothed_frame)
+
+    return smoothed_frames
+
+class PixelDeflicker:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "images": ("IMAGE",),
+                "window_size": ("INT", {"default": 2, "min": 1, "max": 20, "step": 1}),
+                "blending_strength": ("FLOAT", {"default": 0.1, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "batch_size": ("INT", {"default": 10, "min": 1, "max": 100, "step": 1})
+            }
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = "pixelDeflicker"
+
+    CATEGORY = "SuperBeastsAI/Animation"
+
+    def pixelDeflicker(self, images, window_size=5, blending_strength=0.5, batch_size=10):
+        num_frames = len(images)
+        blended_tensor = []
+
+        for i in range(0, num_frames, batch_size):
+            batch_images = images[i:i+batch_size]
+
+            # Convert batch tensor to a list of PIL images
+            pil_images = [tensor2pil(image) for image in batch_images]
+
+            # Convert PIL images to numpy arrays
+            numpy_frames = [np.array(img) / 255.0 for img in pil_images]
+
+            # Apply temporal smoothing to the numpy frames
+            smoothed_frames = temporal_smoothing(numpy_frames, window_size)
+
+            # Blend the smoothed frames with the original frames
+            blended_frames = [
+                np.clip(original * (1 - blending_strength) + smoothed * blending_strength, 0, 1)
+                for original, smoothed in zip(numpy_frames, smoothed_frames)
+            ]
+
+            # Convert the blended frames back to PIL images
+            blended_pil_images = [Image.fromarray((frame * 255).astype(np.uint8)) for frame in blended_frames]
+
+            # Convert the blended PIL images back to a tensor
+            blended_batch_tensor = torch.cat([pil2tensor(img) for img in blended_pil_images], dim=0)
+
+            blended_tensor.append(blended_batch_tensor)
+
+        # Concatenate the blended batches along the first dimension
+        blended_tensor = torch.cat(blended_tensor, dim=0)
+
+        return (blended_tensor,)
+
 NODE_CLASS_MAPPINGS = {
     'HDR Effects (SuperBeasts.AI)': HDREffects,
-    'Make Resized Mask Batch (SuperBeasts.AI)': MakeResizedMaskBatch
+    'Make Resized Mask Batch (SuperBeasts.AI)': MakeResizedMaskBatch,
+    'Deflicker (SuperBeasts.AI)': Deflicker,
+    'Pixel Deflicker (SuperBeasts.AI)': PixelDeflicker
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     'HDREffects': 'HDR Effects (SuperBeasts.AI)',
-    'MakeResizedMaskBatch': 'Make Resized Mask Batch (SuperBeasts.AI)'
+    'MakeResizedMaskBatch': 'Make Resized Mask Batch (SuperBeasts.AI)',
+    'Deflicker': 'Deflicker (SuperBeasts.AI)',
+    'PixelDeflicker': 'Pixel Deflicker (SuperBeasts.AI)'
 }
