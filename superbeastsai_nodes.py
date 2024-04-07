@@ -466,7 +466,7 @@ NODE_CLASS_MAPPINGS = {
     'Make Resized Mask Batch (SuperBeasts.AI)': MakeResizedMaskBatch,
     'Deflicker (SuperBeasts.AI)': Deflicker,
     'Pixel Deflicker (SuperBeasts.AI)': PixelDeflicker,
-    'CrossFadeImageBatches (SuperBeasts.AI)': CrossFadeImageBatches
+    'Cross Fade Image Batches (SuperBeasts.AI)': CrossFadeImageBatches
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -474,5 +474,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     'MakeResizedMaskBatch': 'Make Resized Mask Batch (SuperBeasts.AI)',
     'Deflicker': 'Deflicker (SuperBeasts.AI)',
     'PixelDeflicker': 'Pixel Deflicker (SuperBeasts.AI)',
-    'CrossFadeImageBatches': 'CrossFadeImageBatches (SuperBeasts.AI)'
+    'CrossFadeImageBatches': 'Cross Fade Image Batches (SuperBeasts.AI)'
 }
