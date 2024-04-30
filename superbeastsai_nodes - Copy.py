@@ -461,131 +461,12 @@ class CrossFadeImageBatches:
 
         return (output_batch,)
 
-def resize_and_crop(pil_img, target_width, target_height):
-    """Resize and crop an image to fit exactly the specified dimensions."""
-    original_width, original_height = pil_img.size
-    aspect_ratio = original_width / original_height
-    target_aspect_ratio = target_width / target_height
-
-    if target_aspect_ratio > aspect_ratio:
-        # Target is wider than the image
-        scale_factor = target_width / original_width
-        scaled_height = int(original_height * scale_factor)
-        scaled_width = target_width
-    else:
-        # Target is taller than the image
-        scale_factor = target_height / original_height
-        scaled_height = target_height
-        scaled_width = int(original_width * scale_factor)
-
-    # Resize the image
-    resized_img = pil_img.resize((scaled_width, scaled_height), Image.BILINEAR)
-
-    # Crop the image
-    if scaled_width != target_width or scaled_height != target_height:
-        left = (scaled_width - target_width) // 2
-        top = (scaled_height - target_height) // 2
-        right = left + target_width
-        bottom = top + target_height
-        cropped_img = resized_img.crop((left, top, right, bottom))
-    else:
-        cropped_img = resized_img
-
-    return cropped_img
-
-class ImageBatchManagement:
-    def __init__(self):
-        pass
-
-    @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "width": ("INT", {"default": 512}),
-                "height": ("INT", {"default": 768}),
-                "ordering_enabled": (["disabled", "enabled"], {"default": "disabled"})
-            },
-            "optional": {
-                "new_order": ("STRING", {"default": ""}),
-                **{f"image{i}": ("IMAGE",) for i in range(1, 13)}
-            },
-        }
-
-    RETURN_TYPES = ("IMAGE",)
-    FUNCTION = "reorder"
-    CATEGORY = "SuperBeastsAI/Image"
-
-    def reorder(self, width, height, ordering_enabled, new_order, **kwargs):
-        image_keys = [f'image{i}' for i in range(1, 13)]
-        images = [kwargs.get(key) for key in image_keys if kwargs.get(key) is not None]
-
-        if ordering_enabled == "enabled" and new_order:
-            order_indices = [int(idx) - 1 for idx in new_order.split(',') if idx.strip()]
-            images = [images[idx] for idx in order_indices if idx < len(images)]
-
-        processed_images = []
-        for img in images:
-            pil_img = tensor2pil(img)
-            resized_cropped_img = resize_and_crop(pil_img, width, height)
-            img_tensor = pil2tensor(resized_cropped_img)
-            processed_images.append(img_tensor)
-
-        result = torch.cat(processed_images, dim=0) if processed_images else torch.empty(0, 3, height, width)
-        return (result,)
-
-class MaskBatchManagement:
-    def __init__(self):
-        pass
-
-    @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "width": ("INT", {"default": 512}),
-                "height": ("INT", {"default": 768}),
-                "ordering_enabled": (["disabled", "enabled"], {"default": "disabled"})
-            },
-            "optional": {
-                "new_order": ("STRING", {"default": ""}),
-                **{f"mask{i}": ("MASK",) for i in range(1, 13)}
-            },
-        }
-
-    RETURN_TYPES = ("MASK",)
-    FUNCTION = "append"
-    CATEGORY = "SuperBeastsAI/Masks"
-
-    def append(self, width, height, ordering_enabled, new_order, **kwargs):
-        mask_keys = [f'mask{i}' for i in range(1, 13)]
-        masks = [kwargs.get(key) for key in mask_keys if kwargs.get(key) is not None]
-
-        if ordering_enabled == "enabled" and new_order:
-            order_indices = [int(idx) - 1 for idx in new_order.split(',') if idx.strip()]
-            masks = [masks[idx] for idx in order_indices if idx < len(masks)]
-
-        if not masks:
-            raise ValueError("No valid masks provided.")
-
-        processed_masks = []
-        for mask in masks:
-            pil_mask = tensor2pil(mask)
-            resized_cropped_mask = resize_and_crop(pil_mask, width, height)
-            mask_tensor = pil2tensor(resized_cropped_mask)
-            processed_masks.append(mask_tensor)
-
-        result = torch.cat(processed_masks, dim=0) if processed_masks else torch.empty(0, 1, height, width)
-        return (result,)
-
-
 NODE_CLASS_MAPPINGS = {
     'HDR Effects (SuperBeasts.AI)': HDREffects,
     'Make Resized Mask Batch (SuperBeasts.AI)': MakeResizedMaskBatch,
     'Deflicker (SuperBeasts.AI)': Deflicker,
     'Pixel Deflicker (SuperBeasts.AI)': PixelDeflicker,
-    'Cross Fade Image Batches (SuperBeasts.AI)': CrossFadeImageBatches,
-    'Mask Batch Manager (SuperBeasts.AI)': MaskBatchManagement,
-    'Image Batch Manager (SuperBeasts.AI)': ImageBatchManagement
-   
+    'Cross Fade Image Batches (SuperBeasts.AI)': CrossFadeImageBatches
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -593,7 +474,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     'MakeResizedMaskBatch': 'Make Resized Mask Batch (SuperBeasts.AI)',
     'Deflicker': 'Deflicker (SuperBeasts.AI)',
     'PixelDeflicker': 'Pixel Deflicker (SuperBeasts.AI)',
-    'CrossFadeImageBatches': 'Cross Fade Image Batches (SuperBeasts.AI)',
-    'MaskBatchManagement':'Mask Batch Manager (SuperBeasts.AI)',
-    'ImageBatchManagement':'Image Batch Manager (SuperBeasts.AI)'
+    'CrossFadeImageBatches': 'Cross Fade Image Batches (SuperBeasts.AI)'
 }
