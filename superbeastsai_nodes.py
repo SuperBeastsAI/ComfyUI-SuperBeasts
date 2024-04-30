@@ -450,9 +450,9 @@ class ImageBatchManagement:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "width": ("INT", {"default": 512}),
+                "width": ("INT", {"default": 512, "order": 1},),
                 "height": ("INT", {"default": 768}),
-                "ordering_enabled": (["disabled", "enabled"], {"default": "disabled"}),
+                "reordering_enabled":  ("BOOLEAN", {"default": False}),
                 "image1": ("IMAGE",)  # Ensure at least one image is required
             },
             "optional": {
@@ -464,7 +464,7 @@ class ImageBatchManagement:
     FUNCTION = "reorder"
     CATEGORY = "SuperBeastsAI/Image"
 
-    def reorder(self, width, height, ordering_enabled, new_order, **kwargs):
+    def reorder(self, width, height, reordering_enabled, new_order, **kwargs):
         images = [kwargs["image1"]]  # Start with the required image1 input
 
         i = 2
@@ -472,7 +472,7 @@ class ImageBatchManagement:
             images.append(kwargs[f"image{i}"])
             i += 1
 
-        if ordering_enabled == "enabled" and new_order:
+        if reordering_enabled and new_order:
             order_indices = [int(idx) - 1 for idx in new_order.split(',') if idx.strip()]
             images = [images[idx] for idx in order_indices if idx < len(images)]
 
@@ -496,7 +496,7 @@ class MaskBatchManagement:
             "required": {
                 "width": ("INT", {"default": 512}),
                 "height": ("INT", {"default": 768}),
-                "ordering_enabled": (["disabled", "enabled"], {"default": "disabled"}),
+                "reordering_enabled":  ("BOOLEAN", {"default": False}),
                 "mask1": ("MASK",),
             },
             "optional": {
@@ -508,7 +508,7 @@ class MaskBatchManagement:
     FUNCTION = "append"
     CATEGORY = "SuperBeastsAI/Masks"
 
-    def append(self, width, height, ordering_enabled, new_order, **kwargs):
+    def append(self, width, height, reordering_enabled, new_order, **kwargs):
         masks = [kwargs["mask1"]]  # Start with the required mask1 input
 
         i = 2
@@ -516,7 +516,7 @@ class MaskBatchManagement:
             masks.append(kwargs[f"mask{i}"])
             i += 1
 
-        if ordering_enabled == "enabled" and new_order:
+        if reordering_enabled and new_order:
             order_indices = [int(idx) - 1 for idx in new_order.split(',') if idx.strip()]
             masks = [masks[idx] for idx in order_indices if idx < len(masks)]
 
