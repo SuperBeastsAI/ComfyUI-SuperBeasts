@@ -2,7 +2,7 @@
 
 This repository contains custom nodes for ComfyUI created and used by SuperBeasts.AI (@SuperBeasts.AI on Instagram)
 
-##Updates
+## Updates
 - 30/04/24: 
 -- Updated readme with documentation
 -- Added Deflicker and PixelDeflicker nodes for reducing flickering artifacts in image sequences. 
@@ -62,27 +62,6 @@ The application provides the following adjustable parameters:
   - Higher values result in more vibrant colors
  
 
-#Video tools
-
-## Deflicker
-
-The Deflicker node is designed to reduce flickering artifacts in a sequence of images. It adjusts the brightness of each frame based on the average brightness of its surrounding context frames.
-
-### Features
-- Adjusts brightness of each frame based on the context frames
-- Applies noise reduction and gradient smoothing to the adjusted images
-- Blends the adjusted images with the original images using adaptive blending strength
-- Supports batch processing for efficient computation
-
-## PixelDeflicker
-
-The PixelDeflicker node reduces flickering artifacts in a sequence of images by applying temporal smoothing at the pixel level. It blends the smoothed frames with the original frames to achieve a more stable output.
-
-### Features
-- Applies temporal smoothing to reduce flickering
-- Blends the smoothed frames with the original frames
-- Supports batch processing for efficient computation
-
 # Image & Mask Batch Management
 
 Keep your image and masks sized, cropped and ordered how ever you like without having to recreate the masks or mess with connections. 
@@ -108,6 +87,27 @@ The MaskBatchManagement node is similar to the ImageBatchManagement node but wor
 - Resizes and crops masks to the specified width and height
 - Allows reordering the masks in the batch based on a provided order
 - Supports unlimited input masks
+
+# Experimental: Video tools 
+
+## Deflicker
+
+The Deflicker node is designed to reduce flickering artifacts in a sequence of images. It adjusts the brightness of each frame based on the average brightness of its surrounding context frames.
+
+### Features
+- Adjusts brightness of each frame based on the context frames
+- Applies noise reduction and gradient smoothing to the adjusted images
+- Blends the adjusted images with the original images using adaptive blending strength
+- Supports batch processing for efficient computation
+
+## PixelDeflicker
+
+The PixelDeflicker node reduces flickering artifacts in a sequence of images by applying temporal smoothing at the pixel level. It blends the smoothed frames with the original frames to achieve a more stable output.
+
+### Features
+- Applies temporal smoothing to reduce flickering
+- Blends the smoothed frames with the original frames
+- Supports batch processing for efficient computation
 
 
 # Deprecated / Removed
