@@ -2,6 +2,16 @@
 
 This repository contains custom nodes for ComfyUI created and used by SuperBeasts.AI (@SuperBeasts.AI on Instagram)
 
+##Updates
+- 30/04/24: 
+-- Updated readme with documentation
+-- Added Deflicker and PixelDeflicker nodes for reducing flickering artifacts in image sequences. 
+-- Introduced CrossFadeImageBatches node for smooth cross-fade transitions between image batches
+-- Enhanced ImageBatchManagement and MaskBatchManagement nodes with resizing, cropping, and reordering capabilities
+- 27/03/24: Released and also pushed an update to resolve batched images for videos etc
+
+# Image Effects
+
 ## HDR Effects (SuperBeasts.AI)
 
 The HDR Effects is an image processing application that enhances the dynamic range and visual appeal of input images. It provides a set of adjustable parameters to fine-tune the HDR effect according to user preferences.
@@ -51,5 +61,61 @@ The application provides the following adjustable parameters:
   - Enhances the color saturation of the image
   - Higher values result in more vibrant colors
  
-##Updates
-- 27/03/24: Released and also pushed an update to resolve batched images for videos etc
+
+#Video tools
+
+## Deflicker
+
+The Deflicker node is designed to reduce flickering artifacts in a sequence of images. It adjusts the brightness of each frame based on the average brightness of its surrounding context frames.
+
+### Features
+- Adjusts brightness of each frame based on the context frames
+- Applies noise reduction and gradient smoothing to the adjusted images
+- Blends the adjusted images with the original images using adaptive blending strength
+- Supports batch processing for efficient computation
+
+## PixelDeflicker
+
+The PixelDeflicker node reduces flickering artifacts in a sequence of images by applying temporal smoothing at the pixel level. It blends the smoothed frames with the original frames to achieve a more stable output.
+
+### Features
+- Applies temporal smoothing to reduce flickering
+- Blends the smoothed frames with the original frames
+- Supports batch processing for efficient computation
+
+# Image & Mask Batch Management
+
+Keep your image and masks sized, cropped and ordered how ever you like without having to recreate the masks or mess with connections. 
+Note the resizing capability doesn't provide any settings, we simply crop and resize to maximise the image size with your provided width/height. 
+
+![Batch Management](examples/BatchManagers.jpg)
+
+
+## ImageBatchManagement
+
+The ImageBatchManagement node provides functionality to resize, crop, and reorder a batch of images. It ensures that all images in the batch have the same specified dimensions.
+
+### Features
+- Resizes and crops images to the specified width and height
+- Allows reordering the images in the batch based on a provided order
+- Supports unlimited input images
+
+## MaskBatchManagement
+
+The MaskBatchManagement node is similar to the ImageBatchManagement node but works with mask inputs. It resizes, crops, and reorders a batch of masks to match the specified dimensions.
+
+### Features
+- Resizes and crops masks to the specified width and height
+- Allows reordering the masks in the batch based on a provided order
+- Supports unlimited input masks
+
+
+# Deprecated / Removed
+
+## MakeResizedMaskBatch (Deprecated please use MaskBatchManagement)
+The MakeResizedMaskBatch node creates a batch of masks from multiple individual masks or batches. 
+It resizes and crops the input masks to match the specified width and height.
+
+## Cross Fade Image Batches (SuperBeasts.AI)
+There is another preexisting node that does this and more so I've removed this function.
+

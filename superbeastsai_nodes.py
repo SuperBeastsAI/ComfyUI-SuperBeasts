@@ -410,57 +410,6 @@ class PixelDeflicker:
 
         return (blended_tensor,)
 
-class CrossFadeImageBatches:
-    @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "batch1": ("IMAGE",),
-                "batch2": ("IMAGE",),
-                "fade_frames": ("INT", {"default": 10, "min": 1, "max": 100, "step": 1}),
-                "fade_strength": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01}),
-                "ease_type": (["linear", "ease_in", "ease_out", "ease_in_out"], {"default": "linear"}),
-            }
-        }
-
-    RETURN_TYPES = ("IMAGE",)
-    FUNCTION = "crossfade"
-    CATEGORY = "SuperBeastsAI/Animation"
-
-    def crossfade(self, batch1, batch2, fade_frames=10, fade_strength=0.5, ease_type="linear"):
-        num_frames_batch1 = batch1.shape[0]
-        num_frames_batch2 = batch2.shape[0]
-
-        if num_frames_batch1 < fade_frames or num_frames_batch2 < fade_frames:
-            raise ValueError("The number of fade frames must be less than or equal to the number of frames in each batch.")
-
-        if batch1.shape[2:] != batch2.shape[2:]:
-            raise ValueError("The spatial dimensions of batch1 and batch2 must match. Please resize the batches to the same size before using this node.")
-
-        # Extract the frames to be faded from each batch
-        fade_frames_batch1 = batch1[-fade_frames:]
-        fade_frames_batch2 = batch2[:fade_frames]
-
-        # Generate the interpolation weights based on the selected easing function
-        if ease_type == "linear":
-            weights = torch.linspace(0, 1, fade_frames)
-        elif ease_type == "ease_in":
-            weights = torch.pow(torch.linspace(0, 1, fade_frames), 2)
-        elif ease_type == "ease_out":
-            weights = 1 - torch.pow(torch.linspace(1, 0, fade_frames), 2)
-        elif ease_type == "ease_in_out":
-            weights = 0.5 * (1 - torch.cos(torch.linspace(0, torch.pi, fade_frames)))
-
-        weights = weights.view(-1, 1, 1, 1)  # Reshape weights to match the dimensions of the frames
-
-        # Perform the cross-fade between the fade frames of each batch
-        faded_frames = fade_frames_batch1 * (1 - weights * fade_strength) + fade_frames_batch2 * (weights * fade_strength)
-
-        # Combine the non-faded frames from batch1, the faded frames, and the remaining frames from batch2
-        output_batch = torch.cat((batch1[:-fade_frames], faded_frames, batch2[fade_frames:]), dim=0)
-
-        return (output_batch,)
-
 def resize_and_crop(pil_img, target_width, target_height):
     """Resize and crop an image to fit exactly the specified dimensions."""
     original_width, original_height = pil_img.size
@@ -503,11 +452,11 @@ class ImageBatchManagement:
             "required": {
                 "width": ("INT", {"default": 512}),
                 "height": ("INT", {"default": 768}),
-                "ordering_enabled": (["disabled", "enabled"], {"default": "disabled"})
+                "ordering_enabled": (["disabled", "enabled"], {"default": "disabled"}),
+                "image1": ("IMAGE",)  # Ensure at least one image is required
             },
             "optional": {
                 "new_order": ("STRING", {"default": ""}),
-                **{f"image{i}": ("IMAGE",) for i in range(1, 13)}
             },
         }
 
@@ -516,8 +465,12 @@ class ImageBatchManagement:
     CATEGORY = "SuperBeastsAI/Image"
 
     def reorder(self, width, height, ordering_enabled, new_order, **kwargs):
-        image_keys = [f'image{i}' for i in range(1, 13)]
-        images = [kwargs.get(key) for key in image_keys if kwargs.get(key) is not None]
+        images = [kwargs["image1"]]  # Start with the required image1 input
+
+        i = 2
+        while f"image{i}" in kwargs:
+            images.append(kwargs[f"image{i}"])
+            i += 1
 
         if ordering_enabled == "enabled" and new_order:
             order_indices = [int(idx) - 1 for idx in new_order.split(',') if idx.strip()]
@@ -578,49 +531,15 @@ class MaskBatchManagement:
 
         return (result,)
 
-class ConcatConditionings2:
-    @classmethod
-    def INPUT_TYPES(s):
-        return {"required": {
-                     "conditioning1": ("CONDITIONING", ),
-                     },
-                }
 
-    RETURN_TYPES = ("CONDITIONING", )
-    FUNCTION = "doit"
-
-    CATEGORY = "ImpactPack/Util"
-
-    def doit(self, **kwargs):
-        conditioning_to = list(kwargs.values())[0]
-
-        for k, conditioning_from in list(kwargs.items())[1:]:
-            out = []
-            if len(conditioning_from) > 1:
-                print("Warning: ConcatConditionings {k} contains more than 1 cond, only the first one will actually be applied to conditioning1.")
-
-            cond_from = conditioning_from[0][0]
-
-            for i in range(len(conditioning_to)):
-                t1 = conditioning_to[i][0]
-                tw = torch.cat((t1, cond_from), 1)
-                n = [tw, conditioning_to[i][1].copy()]
-                out.append(n)
-
-            conditioning_to = out
-
-        return (out, )
 
 NODE_CLASS_MAPPINGS = {
     'HDR Effects (SuperBeasts.AI)': HDREffects,
     'Make Resized Mask Batch (SuperBeasts.AI)': MakeResizedMaskBatch,
     'Deflicker (SuperBeasts.AI)': Deflicker,
     'Pixel Deflicker (SuperBeasts.AI)': PixelDeflicker,
-    'Cross Fade Image Batches (SuperBeasts.AI)': CrossFadeImageBatches,
     'Mask Batch Manager (SuperBeasts.AI)': MaskBatchManagement,
-    'Image Batch Manager (SuperBeasts.AI)': ImageBatchManagement,
-    'Batch Manager Test (SuperBeasts.AI)': ConcatConditionings2
-   
+    'Image Batch Manager (SuperBeasts.AI)': ImageBatchManagement   
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -628,9 +547,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     'MakeResizedMaskBatch': 'Make Resized Mask Batch (SuperBeasts.AI)',
     'Deflicker': 'Deflicker (SuperBeasts.AI)',
     'PixelDeflicker': 'Pixel Deflicker (SuperBeasts.AI)',
-    'CrossFadeImageBatches': 'Cross Fade Image Batches (SuperBeasts.AI)',
     'MaskBatchManagement':'Mask Batch Manager (SuperBeasts.AI)',
-    'ImageBatchManagement':'Image Batch Manager (SuperBeasts.AI)',
-    'ConcatConditionings2':'Batch Manager Test (SuperBeasts.AI)'
-
+    'ImageBatchManagement':'Image Batch Manager (SuperBeasts.AI)'
 }
