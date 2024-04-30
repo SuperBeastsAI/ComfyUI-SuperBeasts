@@ -538,16 +538,16 @@ class MaskBatchManagement:
         pass
 
     @classmethod
-    def INPUT_TYPES(cls):
+    def INPUT_TYPES(s):
         return {
             "required": {
                 "width": ("INT", {"default": 512}),
                 "height": ("INT", {"default": 768}),
-                "ordering_enabled": (["disabled", "enabled"], {"default": "disabled"})
+                "ordering_enabled": (["disabled", "enabled"], {"default": "disabled"}),
+                "mask1": ("MASK",),
             },
             "optional": {
                 "new_order": ("STRING", {"default": ""}),
-                **{f"mask{i}": ("MASK",) for i in range(1, 13)}
             },
         }
 
@@ -556,15 +556,16 @@ class MaskBatchManagement:
     CATEGORY = "SuperBeastsAI/Masks"
 
     def append(self, width, height, ordering_enabled, new_order, **kwargs):
-        mask_keys = [f'mask{i}' for i in range(1, 13)]
-        masks = [kwargs.get(key) for key in mask_keys if kwargs.get(key) is not None]
+        masks = [kwargs["mask1"]]  # Start with the required mask1 input
+
+        i = 2
+        while f"mask{i}" in kwargs:
+            masks.append(kwargs[f"mask{i}"])
+            i += 1
 
         if ordering_enabled == "enabled" and new_order:
             order_indices = [int(idx) - 1 for idx in new_order.split(',') if idx.strip()]
             masks = [masks[idx] for idx in order_indices if idx < len(masks)]
-
-        if not masks:
-            raise ValueError("No valid masks provided.")
 
         processed_masks = []
         for mask in masks:
@@ -574,8 +575,41 @@ class MaskBatchManagement:
             processed_masks.append(mask_tensor)
 
         result = torch.cat(processed_masks, dim=0) if processed_masks else torch.empty(0, 1, height, width)
+
         return (result,)
 
+class ConcatConditionings2:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": {
+                     "conditioning1": ("CONDITIONING", ),
+                     },
+                }
+
+    RETURN_TYPES = ("CONDITIONING", )
+    FUNCTION = "doit"
+
+    CATEGORY = "ImpactPack/Util"
+
+    def doit(self, **kwargs):
+        conditioning_to = list(kwargs.values())[0]
+
+        for k, conditioning_from in list(kwargs.items())[1:]:
+            out = []
+            if len(conditioning_from) > 1:
+                print("Warning: ConcatConditionings {k} contains more than 1 cond, only the first one will actually be applied to conditioning1.")
+
+            cond_from = conditioning_from[0][0]
+
+            for i in range(len(conditioning_to)):
+                t1 = conditioning_to[i][0]
+                tw = torch.cat((t1, cond_from), 1)
+                n = [tw, conditioning_to[i][1].copy()]
+                out.append(n)
+
+            conditioning_to = out
+
+        return (out, )
 
 NODE_CLASS_MAPPINGS = {
     'HDR Effects (SuperBeasts.AI)': HDREffects,
@@ -584,7 +618,8 @@ NODE_CLASS_MAPPINGS = {
     'Pixel Deflicker (SuperBeasts.AI)': PixelDeflicker,
     'Cross Fade Image Batches (SuperBeasts.AI)': CrossFadeImageBatches,
     'Mask Batch Manager (SuperBeasts.AI)': MaskBatchManagement,
-    'Image Batch Manager (SuperBeasts.AI)': ImageBatchManagement
+    'Image Batch Manager (SuperBeasts.AI)': ImageBatchManagement,
+    'Batch Manager Test (SuperBeasts.AI)': ConcatConditionings2
    
 }
 
@@ -595,5 +630,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     'PixelDeflicker': 'Pixel Deflicker (SuperBeasts.AI)',
     'CrossFadeImageBatches': 'Cross Fade Image Batches (SuperBeasts.AI)',
     'MaskBatchManagement':'Mask Batch Manager (SuperBeasts.AI)',
-    'ImageBatchManagement':'Image Batch Manager (SuperBeasts.AI)'
+    'ImageBatchManagement':'Image Batch Manager (SuperBeasts.AI)',
+    'ConcatConditionings2':'Batch Manager Test (SuperBeasts.AI)'
+
 }
