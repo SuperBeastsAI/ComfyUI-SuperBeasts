@@ -35,7 +35,10 @@ app.registerExtension({
 		}
 	
 
-		let slot_type = node.outputs[link_info.origin_slot].type;
+		let slot_type;
+		if (link_info.origin_slot !== undefined && node.outputs[link_info.origin_slot]) {
+		  slot_type = node.outputs[link_info.origin_slot].type;
+		}
 		let imageInputs = this.inputs.filter(input => input.type === input_type);
 		let staticInputs = this.inputs.filter(input => input.type !== input_type);
 	
