@@ -3,6 +3,9 @@ from PIL import Image, ImageOps, ImageDraw, ImageFilter, ImageEnhance, ImageCms
 from PIL.PngImagePlugin import PngInfo
 import torch
 import torch.nn.functional as F
+import json
+import random
+
 
 sRGB_profile = ImageCms.createProfile("sRGB")
 Lab_profile = ImageCms.createProfile("LAB")
@@ -450,21 +453,21 @@ class ImageBatchManagement:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "width": ("INT", {"default": 512, "order": 1},),
+                "width": ("INT", {"default": 512, "order": 1}),
                 "height": ("INT", {"default": 768}),
-                "reordering_enabled":  ("BOOLEAN", {"default": False}),
-                "image1": ("IMAGE",)  # Ensure at least one image is required
+                "max_images": ("INT", {"default": 10}),  # New INT input for maximum number of images
+                "random_order": ("BOOLEAN", {"default": False})
             },
             "optional": {
-                "new_order": ("STRING", {"default": ""}),
+                "new_manual_order": ("STRING", {"default": ""}),
             },
         }
 
-    RETURN_TYPES = ("IMAGE",)
+    RETURN_TYPES = ("IMAGE", "STRING")
     FUNCTION = "reorder"
     CATEGORY = "SuperBeastsAI/Image"
 
-    def reorder(self, width, height, reordering_enabled, new_order, **kwargs):
+    def reorder(self, width, height, random_order, max_images, **kwargs):
         images = [kwargs["image1"]]  # Start with the required image1 input
 
         i = 2
@@ -472,9 +475,17 @@ class ImageBatchManagement:
             images.append(kwargs[f"image{i}"])
             i += 1
 
-        if reordering_enabled and new_order:
-            order_indices = [int(idx) - 1 for idx in new_order.split(',') if idx.strip()]
+        if max_images is not None:
+            images = images[:max_images]
+
+        # Default order_output if new_manual_order isn't provided or is empty
+        order_output = ",".join(str(idx + 1) for idx in range(len(images)))
+
+        # Retrieve and apply new_manual_order if it exists
+        if 'new_manual_order' in kwargs and kwargs['new_manual_order']:
+            order_indices = [int(idx) - 1 for idx in kwargs['new_manual_order'].split(',') if idx.strip()]
             images = [images[idx] for idx in order_indices if idx < len(images)]
+            order_output = kwargs['new_manual_order']
 
         processed_images = []
         for img in images:
@@ -484,7 +495,8 @@ class ImageBatchManagement:
             processed_images.append(img_tensor)
 
         result = torch.cat(processed_images, dim=0) if processed_images else torch.empty(0, 3, height, width)
-        return (result,)
+        return (result, order_output)
+
 
 class MaskBatchManagement:
     def __init__(self):
@@ -496,8 +508,7 @@ class MaskBatchManagement:
             "required": {
                 "width": ("INT", {"default": 512}),
                 "height": ("INT", {"default": 768}),
-                "reordering_enabled":  ("BOOLEAN", {"default": False}),
-                "mask1": ("MASK",),
+                "reordering_enabled":  ("BOOLEAN", {"default": False})
             },
             "optional": {
                 "new_order": ("STRING", {"default": ""}),
@@ -531,7 +542,43 @@ class MaskBatchManagement:
 
         return (result,)
 
+class StringListManager:
+    def __init__(self):
+        pass
 
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "frames_per_image": ("INT", {"default": 1, "min": 1, "step": 1}),
+                "reordering_enabled": ("BOOLEAN", {"default": False})
+            },
+            "optional": {
+                "new_order": ("STRING", {"default": ""}),
+            },
+        }
+
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "reorder_strings"
+    CATEGORY = "SuperBeastsAI/Utils"
+
+    def reorder_strings(self, frames_per_image, reordering_enabled, new_order, **kwargs):
+        strings = [kwargs["string1"]]  # Start with the required string1 input
+
+        i = 2
+        while f"string{i}" in kwargs:
+            strings.append(kwargs[f"string{i}"])
+            i += 1
+
+        if reordering_enabled and new_order:
+            order_indices = [int(idx) - 1 for idx in new_order.split(',') if idx.strip()]
+            strings = [strings[idx] for idx in order_indices if idx < len(strings)]
+
+        result = []
+        for i, string in enumerate(strings):
+            result.append('"{frames}": "{string}"'.format(frames=frames_per_image * i, string=string))
+
+        return (",\n".join(result),)
 
 NODE_CLASS_MAPPINGS = {
     'HDR Effects (SuperBeasts.AI)': HDREffects,
@@ -539,7 +586,9 @@ NODE_CLASS_MAPPINGS = {
     'Deflicker (SuperBeasts.AI)': Deflicker,
     'Pixel Deflicker (SuperBeasts.AI)': PixelDeflicker,
     'Mask Batch Manager (SuperBeasts.AI)': MaskBatchManagement,
-    'Image Batch Manager (SuperBeasts.AI)': ImageBatchManagement   
+    'Image Batch Manager (SuperBeasts.AI)': ImageBatchManagement,
+    'String List Manager (SuperBeasts.AI)': StringListManager
+
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -548,5 +597,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     'Deflicker': 'Deflicker (SuperBeasts.AI)',
     'PixelDeflicker': 'Pixel Deflicker (SuperBeasts.AI)',
     'MaskBatchManagement':'Mask Batch Manager (SuperBeasts.AI)',
-    'ImageBatchManagement':'Image Batch Manager (SuperBeasts.AI)'
+    'ImageBatchManagement':'Image Batch Manager (SuperBeasts.AI)',
+    'StringListManager': 'String List Manager (SuperBeasts.AI)'
+
 }
