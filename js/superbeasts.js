@@ -55,10 +55,7 @@ app.registerExtension({
 
 				// Set the 'new_manual_order' widget value
 				setWidgetValueByName(this.widgets, 'new_manual_order', newOrder);
-			} else {
-				// If random order is not enabled, set new_manual_order to an empty string
-				setWidgetValueByName(this.widgets, 'new_manual_order', '');
-			}
+			} 
 
 		};	
 	  }
