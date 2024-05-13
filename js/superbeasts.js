@@ -32,35 +32,35 @@ app.registerExtension({
       };
 
 
-	if (nodeData.name === "Image Batch Manager (SuperBeasts.AI)") {
-		nodeType.prototype.onExecutionStart = function () {
+		if (nodeData.name === "Image Batch Manager (SuperBeasts.AI)") {
+			nodeType.prototype.onExecutionStart = function () {
 
-			// Assume 'this.widgets' contains all the widgets of the node
-			const max_images = getWidgetValueByName(this.widgets, 'max_images');
-			const randomOrderValue = getWidgetValueByName(this.widgets, 'random_order');
+				// Assume 'this.widgets' contains all the widgets of the node
+				const max_images = getWidgetValueByName(this.widgets, 'max_images');
+				const randomOrderValue = getWidgetValueByName(this.widgets, 'random_order');
 
-			if (randomOrderValue) {
-				// Filter image inputs and ensure only valid image slots are considered
-				const imageInputs = this.inputs.filter(input => input.type === 'IMAGE');
+				if (randomOrderValue) {
+					// Filter image inputs and ensure only valid image slots are considered
+					const imageInputs = this.inputs.filter(input => input.type === 'IMAGE');
 
-				// Determine the effective number of indices to consider
-				let effectiveLength = Math.min(imageInputs.length, max_images);
+					// Determine the effective number of indices to consider
+					let effectiveLength = Math.min(imageInputs.length, max_images);
 
-				// Ensure effectiveLength doesn't drop below zero due to the subtraction
-				effectiveLength = Math.max(effectiveLength - 1, 0);
+					// Ensure we do not accidentally reduce the number of images if not needed
+					if (effectiveLength > 0 && imageInputs.length >= max_images) {
+						// Generate an array of indices based on the effective length
+						let indices = Array.from({length: effectiveLength}, (_, i) => i + 1);
+						shuffle(indices); // Shuffle the indices to randomize
 
-				// Generate an array of indices based on the effective length
-				let indices = Array.from({length: effectiveLength}, (_, i) => i + 1);
-				shuffle(indices); // Shuffle the indices to randomize
+						// Convert indices to a string to set as the new value
+						const newOrder = indices.join(',');
 
-				// Convert indices to a string to set as the new value
-				const newOrder = indices.join(',');
-
-				// Set the 'new_manual_order' widget value
-				setWidgetValueByName(this.widgets, 'new_manual_order', newOrder);
-			}
-		};
-	}
+						// Set the 'new_manual_order' widget value
+						setWidgetValueByName(this.widgets, 'new_manual_order', newOrder);
+					}
+				}
+			};
+		}
 
 
       nodeType.prototype.onConnectionsChange = function(type, index, connected, link_info) {
