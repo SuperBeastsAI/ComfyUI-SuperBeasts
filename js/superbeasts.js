@@ -32,9 +32,9 @@ app.registerExtension({
       };
 
 
-	  if (nodeData.name === "Image Batch Manager (SuperBeasts.AI)") {
-		nodeType.prototype.onExecutionStart  = function () {
- 
+	if (nodeData.name === "Image Batch Manager (SuperBeasts.AI)") {
+		nodeType.prototype.onExecutionStart = function () {
+
 			// Assume 'this.widgets' contains all the widgets of the node
 			const max_images = getWidgetValueByName(this.widgets, 'max_images');
 			const randomOrderValue = getWidgetValueByName(this.widgets, 'random_order');
@@ -46,6 +46,9 @@ app.registerExtension({
 				// Determine the effective number of indices to consider
 				let effectiveLength = Math.min(imageInputs.length, max_images);
 
+				// Ensure effectiveLength doesn't drop below zero due to the subtraction
+				effectiveLength = Math.max(effectiveLength - 1, 0);
+
 				// Generate an array of indices based on the effective length
 				let indices = Array.from({length: effectiveLength}, (_, i) => i + 1);
 				shuffle(indices); // Shuffle the indices to randomize
@@ -55,10 +58,9 @@ app.registerExtension({
 
 				// Set the 'new_manual_order' widget value
 				setWidgetValueByName(this.widgets, 'new_manual_order', newOrder);
-			} 
-
-		};	
-	  }
+			}
+		};
+	}
 
 
       nodeType.prototype.onConnectionsChange = function(type, index, connected, link_info) {
@@ -133,9 +135,9 @@ app.registerExtension({
 		  if (slot_type === "STRING") {
 			let empty_slot_count = stringInputs.filter(input => input.link === null).length;
 			if (!connected) {
-			  if (link_info.target_slot !== 0) {
-				this.removeInput(link_info.target_slot);
-			  }
+				if (link_info.target_slot !== 0 && this.inputs[link_info.target_slot].name !== 'new_order') {
+					this.removeInput(link_info.target_slot);
+				}
 			} else {
 			  // Connection was added
 			  if (empty_slot_count === 0) {
@@ -144,11 +146,16 @@ app.registerExtension({
 			  }
 			}
 		  }
-	  
+		
+		let indexCounter = 1; // Start counter for naming inputs not 'new_order'
+
 		  // Renumber the string inputs
 		  stringInputs = this.inputs.filter(input => input.type === "STRING");
 		  stringInputs.forEach((input, idx) => {
-			input.name = `string${idx + 1}`;
+			  if (input.name !== 'new_order') {
+				input.name = `string${indexCounter}`;
+				indexCounter++; // Only increment if the input wasn't 'new_order'
+			  }
 		  });
 	  
 		  // Merge and restore order

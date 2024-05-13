@@ -507,8 +507,7 @@ class MaskBatchManagement:
         return {
             "required": {
                 "width": ("INT", {"default": 512}),
-                "height": ("INT", {"default": 768}),
-                "reordering_enabled":  ("BOOLEAN", {"default": False})
+                "height": ("INT", {"default": 768})
             },
             "optional": {
                 "new_order": ("STRING", {"default": ""}),
@@ -519,7 +518,7 @@ class MaskBatchManagement:
     FUNCTION = "append"
     CATEGORY = "SuperBeastsAI/Masks"
 
-    def append(self, width, height, reordering_enabled, new_order, **kwargs):
+    def append(self, width, height, new_order, **kwargs):
         masks = [kwargs["mask1"]]  # Start with the required mask1 input
 
         i = 2
@@ -527,7 +526,7 @@ class MaskBatchManagement:
             masks.append(kwargs[f"mask{i}"])
             i += 1
 
-        if reordering_enabled and new_order:
+        if new_order:
             order_indices = [int(idx) - 1 for idx in new_order.split(',') if idx.strip()]
             masks = [masks[idx] for idx in order_indices if idx < len(masks)]
 
@@ -550,8 +549,7 @@ class StringListManager:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "frames_per_image": ("INT", {"default": 1, "min": 1, "step": 1}),
-                "reordering_enabled": ("BOOLEAN", {"default": False})
+                "frames_per_image": ("INT", {"default": 1, "min": 1, "step": 1})
             },
             "optional": {
                 "new_order": ("STRING", {"default": ""}),
@@ -562,7 +560,7 @@ class StringListManager:
     FUNCTION = "reorder_strings"
     CATEGORY = "SuperBeastsAI/Utils"
 
-    def reorder_strings(self, frames_per_image, reordering_enabled, new_order, **kwargs):
+    def reorder_strings(self, frames_per_image, new_order, **kwargs):
         strings = [kwargs["string1"]]  # Start with the required string1 input
 
         i = 2
@@ -570,7 +568,7 @@ class StringListManager:
             strings.append(kwargs[f"string{i}"])
             i += 1
 
-        if reordering_enabled and new_order:
+        if new_order:
             order_indices = [int(idx) - 1 for idx in new_order.split(',') if idx.strip()]
             strings = [strings[idx] for idx in order_indices if idx < len(strings)]
 
