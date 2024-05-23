@@ -1,0 +1,14 @@
+[project]
+name = "comfyui-superbeasts"
+description = "Nodes:HDR Effects (SuperBeasts.AI). This repository contains custom nodes for ComfyUI created and used by SuperBeasts.AI (@SuperBeasts.AI on Instagram)"
+version = "1.0.0"
+license = "LICENSE"
+
+[project.urls]
+Repository = "https://github.com/SuperBeastsAI/ComfyUI-SuperBeasts"
+#  Used by Comfy Registry https://comfyregistry.org
+
+[tool.comfy]
+PublisherId = ""
+DisplayName = "ComfyUI-SuperBeasts"
+Icon = ""
