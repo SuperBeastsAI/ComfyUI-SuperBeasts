@@ -83,7 +83,7 @@ app.registerExtension({
     };
 
     if (nodeData.name in dynamicInputConfigs) {
-      const { type, prefix } = nodeConfigs[nodeData.name];
+      const { type, prefix } = dynamicInputConfigs[nodeData.name];
       nodeType = node_add_dynamic(nodeType, prefix, type);
 
       nodeType.prototype.onExecutionStart = function () {
