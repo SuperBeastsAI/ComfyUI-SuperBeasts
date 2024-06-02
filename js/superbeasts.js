@@ -1,204 +1,150 @@
 import { app } from "../../scripts/app.js";
 
+const TypeSlot = {
+  Input: 1,
+  Output: 2,
+};
+
+const TypeSlotEvent = {
+  Connect: true,
+  Disconnect: false,
+};
+
+function node_add_dynamic(nodeType, prefix, type = '*', count = -1) {
+  const onNodeCreated = nodeType.prototype.onNodeCreated;
+  nodeType.prototype.onNodeCreated = function () {
+    const me = onNodeCreated?.apply(this);
+    this.addInput(`${prefix}1`, type);
+    return me;
+  };
+
+  const onConnectionsChange = nodeType.prototype.onConnectionsChange;
+  nodeType.prototype.onConnectionsChange = function (slotType, slot, event, link_info, data) {
+    const me = onConnectionsChange?.apply(this, arguments);
+    if (slotType === TypeSlot.Input) {
+      if (!this.inputs[slot].name.startsWith(prefix)) {
+        return;
+      }
+
+          // remove all non connected inputs
+      if (event == TypeSlotEvent.Disconnect && this.inputs.length > 1) {
+        if (this.widgets) {
+          const widget = this.widgets.find((w) => w.name === this.inputs[slot].name);
+          if (widget) {
+            widget.onRemoved?.();
+            this.widgets = this.widgets.filter((w) => w.name !== widget.name);
+          }
+        }
+              this.removeInput(slot)
+
+              // make inputs sequential again
+        for (let i = 0; i < this.inputs.length; i++) {
+          const name = `${prefix}${i + 1}`;
+          this.inputs[i].label = name;
+          this.inputs[i].name = name;
+        }
+      }
+
+      if (count - 1 < 0) {
+        count = 1000;
+      }
+      const length = this.inputs.length - 1;
+      if (length < count - 1 && this.inputs[length].link != undefined) {
+        const nextIndex = this.inputs.length;
+        const name = `${prefix}${nextIndex + 1}`;
+        this.addInput(name, type);
+      }
+
+      if (event === TypeSlotEvent.Connect && link_info) {
+        const fromNode = this.graph._nodes.find(
+          (otherNode) => otherNode.id == link_info.origin_id
+        );
+        if (fromNode) {
+          const old_type = fromNode.outputs[link_info.origin_slot].type;
+          this.inputs[slot].type = old_type;
+        }
+      } else if (event === TypeSlotEvent.Disconnect) {
+        this.inputs[slot].type = type;
+        this.inputs[slot].label = `${prefix}${slot + 1}`;
+      }
+    }
+    return me;
+  };
+  return nodeType;
+}
 
 app.registerExtension({
   name: "Comfy.superbeastsai_nodes",
   async beforeRegisterNodeDef(nodeType, nodeData, app) {
+    const dynamicInputConfigs = {
+      "Image Batch Manager (SuperBeasts.AI)": { type: "IMAGE", prefix: "image" },
+      "Mask Batch Manager (SuperBeasts.AI)": { type: "MASK", prefix: "mask" },
+      "String List Manager (SuperBeasts.AI)": { type: "STRING", prefix: "string" },
+    };
 
-    // Conditionally modify nodes based on their name
-    if (nodeData.name == "Image Batch Manager (SuperBeasts.AI)" || nodeData.name == "Mask Batch Manager (SuperBeasts.AI)") {
-      let input_type = "IMAGE";
-      let input_name = "image";
+    if (nodeData.name in dynamicInputConfigs) {
+      const { type, prefix } = dynamicInputConfigs[nodeData.name];
+      nodeType = node_add_dynamic(nodeType, prefix, type);
 
-      switch (nodeData.name) {
-        case 'Image Batch Manager (SuperBeasts.AI)':
-          input_type = "IMAGE";
-          input_name = "image";
-          break;
-        case 'Mask Batch Manager (SuperBeasts.AI)':
-          input_type = "MASK";
-          input_name = "mask";
-          break;
-      }
+      nodeType.prototype.onExecutionStart = function () {
 
-      // Define onNodeCreated method
-      nodeType.prototype.onNodeCreated = function() {
+          // Assume 'this.widgets' contains all the widgets of the node
+        const max_images = getWidgetValueByName(this.widgets, 'max_images');
+        const randomOrderValue = getWidgetValueByName(this.widgets, 'random_order');
 
-        this._type = input_type;
-        this.inputs_offset = 0;
+        if (randomOrderValue) {
+            // Filter image inputs and ensure only valid image slots are considered
+          const imageInputs = this.inputs.filter(input => input.type === 'IMAGE');
 
-        const initialInput = this.addInput(`${input_name}1`, this._type);
+            // Determine the effective number of indices to consider
+          let effectiveLength = Math.min(imageInputs.length, max_images);
 
-      };
+            // Ensure we do not accidentally reduce the number of images if not needed
+          if (effectiveLength > 0 && imageInputs.length >= max_images) {
+              // Generate an array of indices based on the effective length
+              let indices = Array.from({length: effectiveLength}, (_, i) => i + 1);
+              shuffle(indices); // Shuffle the indices to randomize
 
+              // Convert indices to a string to set as the new value
+            const newOrder = indices.join(',');
 
-		if (nodeData.name === "Image Batch Manager (SuperBeasts.AI)") {
-			nodeType.prototype.onExecutionStart = function () {
-
-				// Assume 'this.widgets' contains all the widgets of the node
-				const max_images = getWidgetValueByName(this.widgets, 'max_images');
-				const randomOrderValue = getWidgetValueByName(this.widgets, 'random_order');
-
-				if (randomOrderValue) {
-					// Filter image inputs and ensure only valid image slots are considered
-					const imageInputs = this.inputs.filter(input => input.type === 'IMAGE');
-
-					// Determine the effective number of indices to consider
-					let effectiveLength = Math.min(imageInputs.length, max_images);
-
-					// Ensure we do not accidentally reduce the number of images if not needed
-					if (effectiveLength > 0 && imageInputs.length >= max_images) {
-						// Generate an array of indices based on the effective length
-						let indices = Array.from({length: effectiveLength}, (_, i) => i + 1);
-						shuffle(indices); // Shuffle the indices to randomize
-
-						// Convert indices to a string to set as the new value
-						const newOrder = indices.join(',');
-
-						// Set the 'new_manual_order' widget value
-						setWidgetValueByName(this.widgets, 'new_manual_order', newOrder);
-					}
-				}
-			};
-		}
-
-
-      nodeType.prototype.onConnectionsChange = function(type, index, connected, link_info) {
-		console.log("Superbeast connection change");
-
-		if (!link_info) return;
-        const node = app.graph.getNodeById(link_info.origin_id);
-        if (!node) {
-          return;
-        }
-
-        let slot_type;
-        if (link_info.origin_slot !== undefined && node.outputs[link_info.origin_slot]) {
-          slot_type = node.outputs[link_info.origin_slot].type;
-        }
-
-        let imageInputs = this.inputs.filter(input => input.type === input_type);
-        let staticInputs = this.inputs.filter(input => input.type !== input_type);
-
-        if (slot_type === input_type) {
-          let empty_slot_count = imageInputs.filter(input => input.link === null).length;
-          if (!connected) {
-            if (link_info.target_slot !== 0) {
-              this.removeInput(link_info.target_slot);
-            }
-          } else {
-            // Connection was added
-            if (empty_slot_count === 0) {
-              let maxSlotIndex = imageInputs.length;
-              this.addInput(`${input_name}${maxSlotIndex + 1}`, this._type);
-            }
+              // Set the 'new_manual_order' widget value
+            setWidgetValueByName(this.widgets, 'new_manual_order', newOrder);
           }
         }
-
-        // Renumber the image inputs
-        imageInputs = this.inputs.filter(input => input.type === input_type);
-        imageInputs.forEach((input, idx) => {
-          input.name = `${input_name}${idx + 1}`;
-        });
-
-        // Merge and restore order
-        this.inputs = [...staticInputs, ...imageInputs];
       };
     }
-
-	if (nodeData.name == "String List Manager (SuperBeasts.AI)") {
-		nodeType.prototype.onNodeCreated = function() {
-		  this._type = "STRING";
-		  this.inputs_offset = 0;
-	  
-		  // Add initial input
-		  this.addInput(`string1`, this._type);
-		};
-	
-		
-		
-		nodeType.prototype.onConnectionsChange = function(type, index, connected, link_info) {
-		  if (!link_info) return;
-		  const node = app.graph.getNodeById(link_info.origin_id);
-		  if (!node) {
-			return;
-		  }
-	  
-		  let slot_type;
-		  if (link_info.origin_slot !== undefined && node.outputs[link_info.origin_slot]) {
-			slot_type = node.outputs[link_info.origin_slot].type;
-		  }
-	  
-		  let stringInputs = this.inputs.filter(input => input.type === "STRING");
-		  let staticInputs = this.inputs.filter(input => input.type !== "STRING");
-	  
-		  if (slot_type === "STRING") {
-			let empty_slot_count = stringInputs.filter(input => input.link === null).length;
-			if (!connected) {
-				if (link_info.target_slot !== 0 && this.inputs[link_info.target_slot].name !== 'new_order') {
-					this.removeInput(link_info.target_slot);
-				}
-			} else {
-			  // Connection was added
-			  if (empty_slot_count === 0) {
-				let maxSlotIndex = stringInputs.length;
-				this.addInput(`string${maxSlotIndex + 1}`, this._type);
-			  }
-			}
-		  }
-		
-		let indexCounter = 1; // Start counter for naming inputs not 'new_order'
-
-		  // Renumber the string inputs
-		  stringInputs = this.inputs.filter(input => input.type === "STRING");
-		  stringInputs.forEach((input, idx) => {
-			  if (input.name !== 'new_order') {
-				input.name = `string${indexCounter}`;
-				indexCounter++; // Only increment if the input wasn't 'new_order'
-			  }
-		  });
-	  
-		  // Merge and restore order
-		  this.inputs = [...staticInputs, ...stringInputs];
-		};
-	}
   }
 });
 
 // Helper function to shuffle an array (Fisher-Yates shuffle)
 function shuffle(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
         [array[i], array[j]] = [array[j], array[i]]; // Swap elements
-    }
+  }
 }
 
 function getWidgetValueByName(widgets, widgetName) {
     // Check if widgets are defined and iterable
-    if (!widgets || !Array.isArray(widgets)) {
-        return undefined;
-    }
+  if (!widgets || !Array.isArray(widgets)) {
+    return undefined;
+  }
 
     // Find the widget by name
-    const widget = widgets.find(w => w.name === widgetName);
-    if (widget) {
-        return widget.value;
-    } else {
-        return undefined;
-    }
+  const widget = widgets.find(w => w.name === widgetName);
+  return widget ? widget.value : undefined;
 }
 
-
 function setWidgetValueByName(widgets, widgetName, value) {
-    if (!widgets || !Array.isArray(widgets)) {
-        return false;
-    }
+  if (!widgets || !Array.isArray(widgets)) {
+    return false;
+  }
 
-    const widget = widgets.find(w => w.name === widgetName);
-    if (widget) {
-        widget.value = value;
-        return true;
-    } else {
-        return false;
-    }
+  const widget = widgets.find(w => w.name === widgetName);
+  if (widget) {
+    widget.value = value;
+    return true;
+  }
+  return false;
 }
