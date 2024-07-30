@@ -3,6 +3,8 @@
 This repository contains custom nodes for ComfyUI created and used by SuperBeasts.AI (@SuperBeasts.AI on Instagram)
 
 ## Updates
+- 30/07/24:
+-- Removed Deflicker & PixelDeflicker
 - 30/04/24: 
 -- Updated readme with documentation
 -- Added Deflicker and PixelDeflicker nodes for reducing flickering artifacts in image sequences. 
@@ -88,29 +90,13 @@ The MaskBatchManagement node is similar to the ImageBatchManagement node but wor
 - Allows reordering the masks in the batch based on a provided order
 - Supports unlimited input masks
 
-# Experimental: Video tools 
-
-## Deflicker
-
-The Deflicker node is designed to reduce flickering artifacts in a sequence of images. It adjusts the brightness of each frame based on the average brightness of its surrounding context frames.
-
-### Features
-- Adjusts brightness of each frame based on the context frames
-- Applies noise reduction and gradient smoothing to the adjusted images
-- Blends the adjusted images with the original images using adaptive blending strength
-- Supports batch processing for efficient computation
-
-## PixelDeflicker
-
-The PixelDeflicker node reduces flickering artifacts in a sequence of images by applying temporal smoothing at the pixel level. It blends the smoothed frames with the original frames to achieve a more stable output.
-
-### Features
-- Applies temporal smoothing to reduce flickering
-- Blends the smoothed frames with the original frames
-- Supports batch processing for efficient computation
-
 
 # Deprecated / Removed
+
+## Deflicker & PixelDeflicker
+
+The Deflicker nodes have been removed as they were not really fit for purpose / doing what you would expect of a deflicker node. 
+If anyone needs these the code will still be in the repository for some time, just not linked up as a node. 
 
 ## MakeResizedMaskBatch (Deprecated please use MaskBatchManagement)
 The MakeResizedMaskBatch node creates a batch of masks from multiple individual masks or batches. 

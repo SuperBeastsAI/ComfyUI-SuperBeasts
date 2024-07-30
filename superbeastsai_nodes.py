@@ -581,8 +581,6 @@ class StringListManager:
 NODE_CLASS_MAPPINGS = {
     'HDR Effects (SuperBeasts.AI)': HDREffects,
     'Make Resized Mask Batch (SuperBeasts.AI)': MakeResizedMaskBatch,
-    'Deflicker (SuperBeasts.AI)': Deflicker,
-    'Pixel Deflicker (SuperBeasts.AI)': PixelDeflicker,
     'Mask Batch Manager (SuperBeasts.AI)': MaskBatchManagement,
     'Image Batch Manager (SuperBeasts.AI)': ImageBatchManagement,
     'String List Manager (SuperBeasts.AI)': StringListManager
@@ -592,8 +590,6 @@ NODE_CLASS_MAPPINGS = {
 NODE_DISPLAY_NAME_MAPPINGS = {
     'HDREffects': 'HDR Effects (SuperBeasts.AI)',
     'MakeResizedMaskBatch': 'Make Resized Mask Batch (SuperBeasts.AI)',
-    'Deflicker': 'Deflicker (SuperBeasts.AI)',
-    'PixelDeflicker': 'Pixel Deflicker (SuperBeasts.AI)',
     'MaskBatchManagement':'Mask Batch Manager (SuperBeasts.AI)',
     'ImageBatchManagement':'Image Batch Manager (SuperBeasts.AI)',
     'StringListManager': 'String List Manager (SuperBeasts.AI)'
