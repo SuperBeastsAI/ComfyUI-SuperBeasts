@@ -4,16 +4,13 @@ This repository contains custom nodes for ComfyUI created and used by SuperBeast
 
 ## Updates
 
-- 31/07/24:
-- Resolved bugs with dynamic input thanks to @Amorano
-- Add Github Action for Publishing to Comfy Registry thanks to @haohaocreates
-- 30/07/24:
--- Moved Deflicker & PixelDeflicker to Experimental labels (this will require readding them in your WF but I wanted this to be clearer)
+- 31/07/24: Resolved bugs with dynamic input thanks to @Amorano. Add Github Action for Publishing to Comfy Registry thanks to @haohaocreates
+- 30/07/24: Moved Deflicker & PixelDeflicker to Experimental labels (this will require readding them in your WF but I wanted this to be clearer)
 - 30/04/24: 
--- Updated readme with documentation
--- Added Deflicker and PixelDeflicker nodes for reducing flickering artifacts in image sequences. 
--- Introduced CrossFadeImageBatches node for smooth cross-fade transitions between image batches
--- Enhanced ImageBatchManagement and MaskBatchManagement nodes with resizing, cropping, and reordering capabilities
+- - Updated readme with documentation
+- - Added Deflicker and PixelDeflicker nodes for reducing flickering artifacts in image sequences. 
+- - Introduced CrossFadeImageBatches node for smooth cross-fade transitions between image batches
+- - Enhanced ImageBatchManagement and MaskBatchManagement nodes with resizing, cropping, and reordering capabilities
 - 27/03/24: Released and also pushed an update to resolve batched images for videos etc
 
 # Image Effects
