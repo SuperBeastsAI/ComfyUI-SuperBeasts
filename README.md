@@ -3,8 +3,12 @@
 This repository contains custom nodes for ComfyUI created and used by SuperBeasts.AI (@SuperBeasts.AI on Instagram)
 
 ## Updates
+
+- 31/07/24:
+- Resolved bugs with dynamic input thanks to @Amorano
+- Add Github Action for Publishing to Comfy Registry thanks to @haohaocreates
 - 30/07/24:
--- Removed Deflicker & PixelDeflicker
+-- Moved Deflicker & PixelDeflicker to Experimental labels (this will require readding them in your WF but I wanted this to be clearer)
 - 30/04/24: 
 -- Updated readme with documentation
 -- Added Deflicker and PixelDeflicker nodes for reducing flickering artifacts in image sequences. 
