@@ -95,8 +95,8 @@ The MaskBatchManagement node is similar to the ImageBatchManagement node but wor
 
 ## Deflicker & PixelDeflicker
 
-The Deflicker nodes have been removed as they were not really fit for purpose / doing what you would expect of a deflicker node. 
-If anyone needs these the code will still be in the repository for some time, just not linked up as a node. 
+The Deflicker nodes have been marked as "Experimental" as they were experiments that were released but not really fit for purpose / doing what you would expect of a deflicker node. 
+At some point I will be removing these nodes as I won't be supporting them at this stage.  
 
 ## MakeResizedMaskBatch (Deprecated please use MaskBatchManagement)
 The MakeResizedMaskBatch node creates a batch of masks from multiple individual masks or batches. 

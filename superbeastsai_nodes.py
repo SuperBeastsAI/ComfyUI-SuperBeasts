@@ -583,7 +583,9 @@ NODE_CLASS_MAPPINGS = {
     'Make Resized Mask Batch (SuperBeasts.AI)': MakeResizedMaskBatch,
     'Mask Batch Manager (SuperBeasts.AI)': MaskBatchManagement,
     'Image Batch Manager (SuperBeasts.AI)': ImageBatchManagement,
-    'String List Manager (SuperBeasts.AI)': StringListManager
+    'String List Manager (SuperBeasts.AI)': StringListManager,
+    'Deflicker - Experimental (SuperBeasts.AI)': Deflicker,
+    'Pixel Deflicker - Experimental (SuperBeasts.AI)': PixelDeflicker
 
 }
 
@@ -592,6 +594,8 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     'MakeResizedMaskBatch': 'Make Resized Mask Batch (SuperBeasts.AI)',
     'MaskBatchManagement':'Mask Batch Manager (SuperBeasts.AI)',
     'ImageBatchManagement':'Image Batch Manager (SuperBeasts.AI)',
-    'StringListManager': 'String List Manager (SuperBeasts.AI)'
+    'StringListManager': 'String List Manager (SuperBeasts.AI)',
+    'Deflicker': 'Deflicker - Experimental (SuperBeasts.AI)',
+    'PixelDeflicker': 'Pixel Deflicker - Experimental (SuperBeasts.AI)',
 
 }
