@@ -2,7 +2,8 @@
 name = "comfyui-superbeasts"
 description = "This repository contains custom nodes for ComfyUI created and used by SuperBeasts.AI (@SuperBeasts.AI on Instagram)"
 version = "1.0.1"
-license = "MIT License
+license = """
+MIT License
 
 Copyright (c) 2023
 
@@ -23,7 +24,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-"
+"""
 
 [project.urls]
 Repository = "https://github.com/SuperBeastsAI/ComfyUI-SuperBeasts"
