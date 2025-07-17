@@ -36,13 +36,92 @@ the vibrant palette, deep blacks and crisp highlights that define my style.
 > Training a model to apply my signature grade automatically felt like the perfect way to learn more about AI models and also to reclaim that time — and
 > share the benefits with everyone else. So enjoy Super Pop Colour Adjustments!
 
-| Original | S.P.C.A |
-| ![SPCA-Ex1a](examples/SPCA/1a.png)  |  ![SPCA-Ex1b](examples/SPCA/1b.pnb) |
-| ![SPCA-Ex1a](examples/SPCA/2a.png)  |  ![SPCA-Ex1b](examples/SPCA/2b.pnb) |
-| ![SPCA-Ex1a](examples/SPCA/3a.png)  |  ![SPCA-Ex1b](examples/SPCA/3b.pnb) |
-| ![SPCA-Ex1a](examples/SPCA/4a.png)  |  ![SPCA-Ex1b](examples/SPCA/4b.pnb) |
-| ![SPCA-Ex1a](examples/SPCA/5a.png)  |  ![SPCA-Ex1b](examples/SPCA/5b.pnb) |
-| ![SPCA-Ex1a](examples/SPCA/6a.png)  |  ![SPCA-Ex1b](examples/SPCA/6b.pnb) |
+<table width="100%">
+  <tr>
+    <th width="50%">Original</th>
+    <th width="50%">S.P.C.A</th>
+  </tr>
+  <tr>
+    <td><img src="examples/SPCA/1a.png" width="100%" alt="Original 1"></td>
+    <td><img src="examples/SPCA/1b.png" width="100%" alt="S.P.C.A 1"></td>
+  </tr>
+  <tr>
+    <td><img src="examples/SPCA/2a.png" width="100%" alt="Original 2"></td>
+    <td><img src="examples/SPCA/2b.png" width="100%" alt="S.P.C.A 2"></td>
+  </tr>
+  <tr>
+    <td><img src="examples/SPCA/3a.png" width="100%" alt="Original 3"></td>
+    <td><img src="examples/SPCA/3b.png" width="100%" alt="S.P.C.A 3"></td>
+  </tr>
+  <tr>
+    <td><img src="examples/SPCA/4a.png" width="100%" alt="Original 4"></td>
+    <td><img src="examples/SPCA/4b.png" width="100%" alt="S.P.C.A 4"></td>
+  </tr>
+  <tr>
+    <td><img src="examples/SPCA/5a.png" width="100%" alt="Original 5"></td>
+    <td><img src="examples/SPCA/5b.png" width="100%" alt="S.P.C.A 5"></td>
+  </tr>
+  <tr>
+    <td><img src="examples/SPCA/6a.png" width="100%" alt="Original 6"></td>
+    <td><img src="examples/SPCA/6b.png" width="100%" alt="S.P.C.A 6"></td>
+  </tr>
+  <tr>
+    <td><img src="examples/SPCA/7a.png" width="100%" alt="Original 7"></td>
+    <td><img src="examples/SPCA/7b.png" width="100%" alt="S.P.C.A 7"></td>
+  </tr>
+  <tr>
+    <td><img src="examples/SPCA/8a.png" width="100%" alt="Original 8"></td>
+    <td><img src="examples/SPCA/8b.png" width="100%" alt="S.P.C.A 8"></td>
+  </tr>
+  <tr>
+    <td><img src="examples/SPCA/9a.png" width="100%" alt="Original 9"></td>
+    <td><img src="examples/SPCA/9b.png" width="100%" alt="S.P.C.A 9"></td>
+  </tr>
+  <tr>
+    <td><img src="examples/SPCA/10a.png" width="100%" alt="Original 10"></td>
+    <td><img src="examples/SPCA/10b.png" width="100%" alt="S.P.C.A 10"></td>
+  </tr>
+  <tr>
+    <td><img src="examples/SPCA/11a.png" width="100%" alt="Original 11"></td>
+    <td><img src="examples/SPCA/11b.png" width="100%" alt="S.P.C.A 11"></td>
+  </tr>
+  <tr>
+    <td><img src="examples/SPCA/12a.png" width="100%" alt="Original 12"></td>
+    <td><img src="examples/SPCA/12b.png" width="100%" alt="S.P.C.A 12"></td>
+  </tr>
+  <tr>
+    <td><img src="examples/SPCA/13a.png" width="100%" alt="Original 13"></td>
+    <td><img src="examples/SPCA/13b.png" width="100%" alt="S.P.C.A 13"></td>
+  </tr>
+  <tr>
+    <td><img src="examples/SPCA/14a.png" width="100%" alt="Original 14"></td>
+    <td><img src="examples/SPCA/14b.png" width="100%" alt="S.P.C.A 14"></td>
+  </tr>
+  <tr>
+    <td><img src="examples/SPCA/15a.png" width="100%" alt="Original 15"></td>
+    <td><img src="examples/SPCA/15b.png" width="100%" alt="S.P.C.A 15"></td>
+  </tr>
+  <tr>
+    <td><img src="examples/SPCA/16a.png" width="100%" alt="Original 16"></td>
+    <td><img src="examples/SPCA/16b.png" width="100%" alt="S.P.C.A 16"></td>
+  </tr>
+  <tr>
+    <td><img src="examples/SPCA/17a.png" width="100%" alt="Original 17"></td>
+    <td><img src="examples/SPCA/17b.png" width="100%" alt="S.P.C.A 17"></td>
+  </tr>
+  <tr>
+    <td><img src="examples/SPCA/18a.png" width="100%" alt="Original 18"></td>
+    <td><img src="examples/SPCA/18b.png" width="100%" alt="S.P.C.A 18"></td>
+  </tr>
+  <tr>
+    <td><img src="examples/SPCA/19a.png" width="100%" alt="Original 19"></td>
+    <td><img src="examples/SPCA/19b.png" width="100%" alt="S.P.C.A 19"></td>
+  </tr>
+  <tr>
+    <td><img src="examples/SPCA/20a.png" width="100%" alt="Original 20"></td>
+    <td><img src="examples/SPCA/20b.png" width="100%" alt="S.P.C.A 20"></td>
+  </tr>
+</table>
 
 
 ### How it works
