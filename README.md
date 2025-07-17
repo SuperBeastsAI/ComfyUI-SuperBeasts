@@ -50,16 +50,28 @@ the vibrant palette, deep blacks and crisp highlights that define my style.
     <td><img src="examples/SPCA/2b.png" width="100%" alt="S.P.C.A 2"></td>
   </tr>
   <tr>
-    <td><img src="examples/SPCA/3a.png" width="100%" alt="Original 3"></td>
-    <td><img src="examples/SPCA/3b.png" width="100%" alt="S.P.C.A 3"></td>
+    <td><img src="examples/SPCA/27a.png" width="100%" alt="Original 3"></td>
+    <td><img src="examples/SPCA/27b.png" width="100%" alt="S.P.C.A 3"></td>
     <td><img src="examples/SPCA/4a.png" width="100%" alt="Original 4"></td>
     <td><img src="examples/SPCA/4b.png" width="100%" alt="S.P.C.A 4"></td>
   </tr>
+    <tr>
+    <td><img src="examples/SPCA/21a.png" width="100%" alt="Original 5"></td>
+    <td><img src="examples/SPCA/21b.png" width="100%" alt="S.P.C.A 5"></td>
+    <td><img src="examples/SPCA/22a.png" width="100%" alt="Original 6"></td>
+    <td><img src="examples/SPCA/22b.png" width="100%" alt="S.P.C.A 6"></td>
+  </tr>
+    <tr>
+    <td><img src="examples/SPCA/25a.png" width="100%" alt="Original 5"></td>
+    <td><img src="examples/SPCA/25b.png" width="100%" alt="S.P.C.A 5"></td>
+    <td><img src="examples/SPCA/26a.png" width="100%" alt="Original 6"></td>
+    <td><img src="examples/SPCA/26b.png" width="100%" alt="S.P.C.A 6"></td>
+  </tr>
   <tr>
-    <td><img src="examples/SPCA/5a.png" width="100%" alt="Original 5"></td>
-    <td><img src="examples/SPCA/5b.png" width="100%" alt="S.P.C.A 5"></td>
-    <td><img src="examples/SPCA/6a.png" width="100%" alt="Original 6"></td>
-    <td><img src="examples/SPCA/6b.png" width="100%" alt="S.P.C.A 6"></td>
+    <td><img src="examples/SPCA/23a.png" width="100%" alt="Original 5"></td>
+    <td><img src="examples/SPCA/23b.png" width="100%" alt="S.P.C.A 5"></td>
+    <td><img src="examples/SPCA/28a.png" width="100%" alt="Original 6"></td>
+    <td><img src="examples/SPCA/28b.png" width="100%" alt="S.P.C.A 6"></td>
   </tr>
 
   <tr>
