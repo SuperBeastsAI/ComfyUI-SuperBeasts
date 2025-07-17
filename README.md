@@ -3,7 +3,7 @@
 This repository contains custom nodes for ComfyUI created and used by SuperBeasts.AI (@SuperBeasts.AI on Instagram)
 
 ## Updates
-
+- 19/07/25: Super Pop Colour Adjustment model and node release
 - 31/07/24: Resolved bugs with dynamic input thanks to @Amorano. Add Github Action for Publishing to Comfy Registry thanks to @haohaocreates
 - 30/07/24: Moved Deflicker & PixelDeflicker to Experimental labels (this will require readding them in your WF but I wanted this to be clearer)
 - 30/04/24: 
@@ -23,7 +23,7 @@ This repository contains custom nodes for ComfyUI created and used by SuperBeast
 ### Why “Super Pop”?
 
 Months of solo R&D, hundreds of hand-tuned colour-grade examples and a brand-new residual
-CNN culminated in a node that gives every image the unmistakable **SuperBeasts “pop”** in
+CNN culminated in a node that gives every image the **SuperBeasts “pop”** in
 one click. No LUT-hunting, no 37-slider wrestling – just feed in your art and let the model
 do the heavy lifting. I personally curated and corrected every training frame to lock down
 the vibrant palette, deep blacks and crisp highlights that define my style.
@@ -35,6 +35,15 @@ the vibrant palette, deep blacks and crisp highlights that define my style.
 > muted yellow-brown tones where you would expect white and these often get worse over iterations. 
 > Training a model to apply my signature grade automatically felt like the perfect way to learn more about AI models and also to reclaim that time — and
 > share the benefits with everyone else. So enjoy Super Pop Colour Adjustments!
+
+| Original | S.P.C.A |
+| ![SPCA-Ex1a](examples/SPCA/1a.png)  |  ![SPCA-Ex1b](examples/SPCA/1b.pnb) |
+| ![SPCA-Ex1a](examples/SPCA/2a.png)  |  ![SPCA-Ex1b](examples/SPCA/2b.pnb) |
+| ![SPCA-Ex1a](examples/SPCA/3a.png)  |  ![SPCA-Ex1b](examples/SPCA/3b.pnb) |
+| ![SPCA-Ex1a](examples/SPCA/4a.png)  |  ![SPCA-Ex1b](examples/SPCA/4b.pnb) |
+| ![SPCA-Ex1a](examples/SPCA/5a.png)  |  ![SPCA-Ex1b](examples/SPCA/5b.pnb) |
+| ![SPCA-Ex1a](examples/SPCA/6a.png)  |  ![SPCA-Ex1b](examples/SPCA/6b.pnb) |
+
 
 ### How it works
 
