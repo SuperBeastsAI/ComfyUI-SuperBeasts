@@ -7,6 +7,7 @@ import json
 import random
 import os
 import re
+import urllib.request, pathlib, shutil, tempfile
 from typing import Dict, Any, List
 import importlib.util
 
@@ -19,6 +20,47 @@ if _cfg_spec is not None:
     CONTEXT_THUMBNAIL_SIZE = getattr(_cfg, "CONTEXT_THUMBNAIL_SIZE", (64, 64))
 else:
     CONTEXT_THUMBNAIL_SIZE = (64, 64)
+
+# ---------------------------------------------------------------------------
+# Remote model download helper
+# ---------------------------------------------------------------------------
+
+# Base URL for hosting – we append <family>/downloads/<version>/<filename>
+_REMOTE_MODEL_BASE_URL = "https://raw.githubusercontent.com/SuperBeastsAI/SuperBeastsAI-Models/main/"
+
+# Registry of published model families → version → filename
+_MODEL_REGISTRY: dict[str, dict[str, str]] = {
+    "SuperPopColorAdjustment": {
+        "v1.0": "SuperBeasts_ColorAdjustment_512px_V1.onnx",
+    },
+    # Future models / versions can be added here
+}
+
+
+def _latest_version(family: str) -> str:
+    versions = list(_MODEL_REGISTRY.get(family, {}).keys())
+    if not versions:
+        raise ValueError(f"Unknown model family: {family}")
+    # assume semantic ‘vX.Y’ strings – sort lexically
+    return sorted(versions)[-1]
+
+
+def _download_remote_model(rel_path: str, dest_path: str):
+    """Download file at *rel_path* (relative to base URL) to *dest_path*."""
+    url = _REMOTE_MODEL_BASE_URL + rel_path
+    print(f"[SuperBeasts] Downloading model weights from {url} …")
+
+    tmp_dir = tempfile.mkdtemp()
+    tmp_file = os.path.join(tmp_dir, rel_path.split('/')[-1] + ".part")
+
+    try:
+        with urllib.request.urlopen(url) as r, open(tmp_file, "wb") as f:
+            shutil.copyfileobj(r, f)
+        os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+        shutil.move(tmp_file, dest_path)
+        print(f"[SuperBeasts] Saved weights to {dest_path}")
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
 
 # Import helper to add extra channels same way training did
 try:
@@ -114,10 +156,18 @@ class SBLoadModel:
     def INPUT_TYPES(cls):
         models_dir = os.path.join(os.path.dirname(__file__), 'models')
         available = _discover_sb_models(models_dir)
-        dropdown = available if available else ["<no models found>"]
+
+        dropdown_set = set(available)
+        # Add registry family/version keys so saved workflows remain valid
+        for fam, vers_dict in _MODEL_REGISTRY.items():
+            dropdown_set.add(f"{fam}/latest")
+            for ver in vers_dict.keys():
+                dropdown_set.add(f"{fam}/{ver}")
+
+        dropdown = sorted(dropdown_set)
         return {
             "required": {
-                "model_name": (dropdown, ),
+                "model_key": (dropdown, ),
                 "device": (["AUTO", "CPU", "GPU"], {"default": "AUTO"}),
             }
         }
@@ -136,12 +186,40 @@ class SBLoadModel:
                 pass
         return default
 
-    def load(self, model_name: str, device: str = "AUTO"):
+    def load(self, model_key: str, device: str = "AUTO"):
+        """`model_key` can be either a raw filename (legacy) *or* the form
+        "Family/Version" (e.g. "SuperPopColorAdjustment/v1.0" or "SuperPopColorAdjustment/latest")."""
+
+        # ------------------------------------------------------------------
+        # Resolve model filename, family, version
+        # ------------------------------------------------------------------
+        if "/" in model_key:
+            family, version = model_key.split("/", 1)
+            if version.lower() == "latest":
+                version = _latest_version(family)
+            try:
+                filename = _MODEL_REGISTRY[family][version]
+            except KeyError:
+                raise ValueError(f"Unknown model/version combination: {model_key}")
+        else:
+            # Legacy direct filename path (assume SuperPop)…
+            family = "SuperPopColorAdjustment"
+            version = _latest_version(family)
+            filename = model_key
+
         models_dir = os.path.join(os.path.dirname(__file__), 'models')
-        model_path = os.path.join(models_dir, model_name)
+        os.makedirs(models_dir, exist_ok=True)
+        model_path = os.path.join(models_dir, filename)
 
         if not os.path.isfile(model_path):
-            raise FileNotFoundError(f"Model file not found: {model_path}")
+            rel_path = f"{family}/downloads/{version}/{filename}"
+            try:
+                _download_remote_model(rel_path, model_path)
+            except Exception as e:
+                raise FileNotFoundError(
+                    f"Model file not found locally and automatic download failed.\n"
+                    f"Attempted path: {rel_path}\n{e}"
+                )
 
         # Use cache if possible
         if model_path in self._model_cache:
@@ -164,7 +242,7 @@ class SBLoadModel:
             dev_ctx = "/CPU:0"
 
         # Determine patch size from filename
-        patch_size = self._parse_patch_size(model_name)
+        patch_size = self._parse_patch_size(filename)
 
         if model_path.lower().endswith('.safetensors'):
             import torch
@@ -808,7 +886,7 @@ class StringListManager:
 
         return (",\n".join(result),)
 
-class SuperColorAdjustment:
+class SuperPopColorAdjustment:
     """Generate a series of color-adjusted images by blending the residual produced by a model-based correction with the original image at different strengths.
 
     The node calls the provided *SBModel* once to obtain a fully-corrected reference image.  It then blends that result back into the
@@ -823,14 +901,13 @@ class SuperColorAdjustment:
             "required": {
                 "model": ("SBMODEL", ),
                 "image": ("IMAGE", ),
-                "max_strength": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 5.0, "step": 0.01}),
-                "count": ("INT", {"default": 1, "min": 1, "max": 20, "step": 1}),
-                "overlap": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 0.9, "step": 0.05}),
+                "max_strength": ("FLOAT", {"default": 1.0, "min": -100.0, "max": 100.0, "step": 0.01}),
+                "count": ("INT", {"default": 1, "min": 1, "max": 99999, "step": 1}),
+                "overlap": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 0.99, "step": 0.01}),
                 "initial_context_for_batch": ("BOOLEAN", {"default": False}),
             },
             "optional": {
                 "context": ("IMAGE", ),  # Optional context image(s)
-                "show_progress": ("BOOLEAN", {"default": True}),
             }
         }
 
@@ -972,7 +1049,7 @@ class SuperColorAdjustment:
         return w
 
     def apply_adjustment(self, model, image, max_strength=1.0, count=1, overlap=0.5,
-                         initial_context_for_batch=False, context=None, show_progress=True):
+                         initial_context_for_batch=False, context=None):
         # Ensure *image* is a batch tensor – iterate over each frame
         output_tensors = []
 
@@ -989,14 +1066,13 @@ class SuperColorAdjustment:
             return orig_pil
 
         pbar = None  # progress bar placeholder
-        if show_progress:
-            try:
-                import importlib
-                ProgressBar = getattr(importlib.import_module("comfy.utils"), "ProgressBar", None)  # type: ignore[attr-defined,ignored-type]
-                if ProgressBar is not None:
-                    pbar = ProgressBar(image.shape[0])
-            except Exception:
-                pbar = None
+        try:
+            import importlib
+            ProgressBar = getattr(importlib.import_module("comfy.utils"), "ProgressBar", None)  # type: ignore[attr-defined,ignored-type]
+            if ProgressBar is not None:
+                pbar = ProgressBar(image.shape[0])
+        except Exception:
+            pbar = None
 
         for idx, img_tensor in enumerate(image):
             # Convert to PIL for easier colour operations
@@ -1117,7 +1193,7 @@ class SuperColorAdjustment:
                 output_tensors.append(pil2tensor(blended_pil))
 
             # Update progress bar
-            if show_progress and 'pbar' in locals() and pbar is not None:
+            if pbar is not None:
                 pbar.update_absolute(idx + 1)
 
         # Concatenate along batch dimension
@@ -1137,8 +1213,8 @@ NODE_CLASS_MAPPINGS = {
     'Deflicker - Experimental (SuperBeasts.AI)': Deflicker,
     'Pixel Deflicker - Experimental (SuperBeasts.AI)': PixelDeflicker,
     # Legacy key kept for compatibility – new branded name below
-    'Super Color Adjustment (SuperBeasts.AI)': SuperColorAdjustment,
-    'Super Pop Color Adjustment (SuperBeasts.AI)': SuperColorAdjustment,
+    'Super Color Adjustment (SuperBeasts.AI)': SuperPopColorAdjustment,
+    'Super Pop Color Adjustment (SuperBeasts.AI)': SuperPopColorAdjustment,
     'SB Load Model (SuperBeasts.AI)': SBLoadModel,
 }
 
@@ -1150,6 +1226,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     'StringListManager': 'String List Manager (SuperBeasts.AI)',
     'Deflicker': 'Deflicker - Experimental (SuperBeasts.AI)',
     'PixelDeflicker': 'Pixel Deflicker - Experimental (SuperBeasts.AI)',
-    'SuperColorAdjustment': 'Super Pop Color Adjustment (SuperBeasts.AI)',
+    'SuperPopColorAdjustment': 'Super Pop Color Adjustment (SuperBeasts.AI)',
     'SBLoadModel': 'SB Load Model (SuperBeasts.AI)',
 }
