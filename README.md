@@ -16,6 +16,8 @@ This repository contains custom nodes for ComfyUI created and used by SuperBeast
 ---
 # Super Beasts Custom Models (and nodes)
 
+![SPCA-Header](examples/SPCA-Header.webp)
+
 ## Super Pop Color Adjustment (SuperBeasts.AI)
 
 ### Why “Super Pop”?
