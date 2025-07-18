@@ -32,6 +32,15 @@ If you want to show support please take a momenet to follow me on Instagram <a h
 
 Happy generating!!
 
+### Using Super Pop
+
+1. Add **SB Load Model (SuperBeasts.AI)** node.
+2. Pick **SuperPopColorAdjustment/latest**.
+3. Connect to **Super Pop Color Adjustment (SuperBeasts.AI)** node.
+4. Input source image and tune *Max Strength*, *Count*, *Overlap* (recommendations below)
+
+**License:** Weights are SPCA-Community-NoSaaS. Local/client use OK; no public SaaS redistribution. <a href="https://github.com/SuperBeastsAI/SuperBeastsAI-Models/blob/main/SuperPopColorAdjustment/LICENSE.txt" target="_blank">See model repo</a>.
+
 
 <h2>Same settings multiple situations corrected</h2>
 
@@ -215,6 +224,7 @@ Happy generating!!
 
 | Parameter | Suggested | Notes |
 |-----------|-----------|-------|
+| Image | Image dimensions ideally <2048px | Techncially supports any size but due to 512px patch size local adjustments become increasingly obvious as size increases. |
 | Max strength  | **1.0**   | 0.5-2.0 for subtle ➜ dramatic |
 | Count     | 1         | Increase for automatic strength batching up to your max strength value |
 | Overlap   | 0.4       | Up to 0.9 if GPU / Compute permits |

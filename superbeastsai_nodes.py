@@ -10,6 +10,8 @@ import re
 import urllib.request, pathlib, shutil, tempfile
 from typing import Dict, Any, List
 import importlib.util
+import sys
+
 
 # Use importlib to probe for the optional global `config` module without triggering static
 # import-time linter errors when it does not exist in the current environment.
@@ -27,6 +29,17 @@ else:
 
 # Base URL for hosting – we append <family>/<version>/<filename>
 _REMOTE_MODEL_BASE_URL = "https://raw.githubusercontent.com/SuperBeastsAI/SuperBeastsAI-Models/main/"
+# License info for downloaded model weights
+_SPCA_LICENSE_ID = "SPCA-Community-NoSaaS"
+_SPCA_LICENSE_URL = (
+    "https://github.com/SuperBeastsAI/SuperBeastsAI-Models/"
+    "blob/main/SuperPopColorAdjustment/LICENSE.txt"
+)
+# File written into models dir after first download so we don't spam the console
+_SPCA_LICENSE_STUB_FILENAME = "SPCA_LICENSE_STUB.txt"
+# Env var: set to "1" (or any truthy string) to suppress the banner (CI / headless automation)
+_SUPERBEASTS_SILENCE_LICENSE_ENV = "SUPERBEASTS_SILENCE_LICENSE"
+
 
 # Registry of published model families → version → filename
 _MODEL_REGISTRY: dict[str, dict[str, str]] = {
@@ -46,7 +59,9 @@ def _latest_version(family: str) -> str:
 
 
 def _download_remote_model(rel_path: str, dest_path: str):
-    """Download file at *rel_path* (relative to base URL) to *dest_path*."""
+    """Download file at *rel_path* (relative to base URL) to *dest_path*.
+    Emits a one-time license banner and writes a stub file so we don't repeat warnings.
+    """
     url = _REMOTE_MODEL_BASE_URL + rel_path
     print(f"[SuperBeasts] Downloading model weights from {url} …")
 
@@ -54,13 +69,21 @@ def _download_remote_model(rel_path: str, dest_path: str):
     tmp_file = os.path.join(tmp_dir, rel_path.split('/')[-1] + ".part")
 
     try:
+        # --- download file ---
         with urllib.request.urlopen(url) as r, open(tmp_file, "wb") as f:
             shutil.copyfileobj(r, f)
+
+        # --- move into place ---
         os.makedirs(os.path.dirname(dest_path), exist_ok=True)
         shutil.move(tmp_file, dest_path)
         print(f"[SuperBeasts] Saved weights to {dest_path}")
+
+        # --- after successful download, print license notice (once per repo install) ---
+        _maybe_print_spca_license_notice(os.path.dirname(dest_path))
+
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)
+
 
 # Import helper to add extra channels same way training did
 try:
@@ -128,6 +151,46 @@ else:
 # SB MODEL LOADER NODE
 # ---------------------------------------------
 
+def _maybe_print_spca_license_notice(models_dir: str):
+    """
+    Print the SPCA license banner once per install.
+    We create a stub file in the models_dir so we don't repeat on future runs.
+    Suppress by setting env var SUPERBEASTS_SILENCE_LICENSE=1.
+    """
+    if os.environ.get(_SUPERBEASTS_SILENCE_LICENSE_ENV, "").strip():
+        return
+
+    stub_path = os.path.join(models_dir, _SPCA_LICENSE_STUB_FILENAME)
+    if os.path.exists(stub_path):
+        # Already shown
+        return
+
+    banner = (
+        "\n"
+        "============================================================\n"
+        " Super Pop Color Adjustment – Model License Notice\n"
+        "------------------------------------------------------------\n"
+        f" Weights licensed under {_SPCA_LICENSE_ID}.\n"
+        " Personal / client / local use OK.\n"
+        " Public SaaS/API redistribution requires a license.\n"
+        f" Full terms: {_SPCA_LICENSE_URL}\n"
+        "============================================================\n"
+    )
+    print(banner, file=sys.stderr)
+
+    # write stub file so we don't print again
+    try:
+        with open(stub_path, "w", encoding="utf-8") as f:
+            f.write(
+                "Super Pop Color Adjustment weights downloaded.\n"
+                "No public SaaS/API redistribution without license. Contact: Via DM on Instagram @SuperBeasts.AI"
+                f"License: {_SPCA_LICENSE_ID}\n"
+                f"See: {_SPCA_LICENSE_URL}\n"
+            )
+    except Exception as e:
+        # non-fatal; just warn
+        print(f"[SuperBeasts] WARNING: could not write license stub: {e}", file=sys.stderr)
+
 
 def _discover_sb_models(models_dir: str):
     """Return a list of available .keras / .h5 model filenames (relative, not absolute)."""
@@ -142,13 +205,16 @@ def _discover_sb_models(models_dir: str):
 
 
 class SBLoadModel:
-    """Load a SuperBeasts colour-adjustment Keras model and expose it to other nodes.
+    """Load a SuperBeasts colour-adjustment model (downloads if missing).
 
-    The node scans the local `models/` folder (next to this .py file) for `.keras` or `.h5` files.
-    It keeps a simple in-memory cache so the weight file is only loaded once per session.
-    Additional metadata such as the patch size (deduced from the filename like *_512px.keras*) is
-    returned alongside the model so downstream nodes know how to tile large images.
+    ⚠ **License:** Downloaded weights are licensed under SPCA-Community-NoSaaS.
+    Local / personal / client use OK. Public SaaS/API redistribution requires a license.
+    See: https://github.com/SuperBeastsAI/SuperBeastsAI-Models/tree/main/SuperPopColorAdjustment
+
+    Select a model from the dropdown. Use Family/Version entries (e.g., SuperPopColorAdjustment/latest)
+    to auto-download from the official model registry when not found locally.
     """
+
 
     _model_cache: Dict[str, Dict[str, Any]] = {}
 
