@@ -39,7 +39,14 @@ Happy generating!!
 3. Connect to **Super Pop Color Adjustment (SuperBeasts.AI)** node.
 4. Input source image and tune *Max Strength*, *Count*, *Overlap* (recommendations below)
 
-**License:** Weights are SPCA-Community-NoSaaS. Local/client use OK; no public SaaS redistribution. <a href="https://github.com/SuperBeastsAI/SuperBeastsAI-Models/blob/main/SuperPopColorAdjustment/LICENSE.txt" target="_blank">See model repo</a>.
+**Auto model weight download:**
+Weights are automatically downloaded the first time the **SB Load Model** node runs using a specific version or 'latest'.
+If you prefer manual download, grab them from the GitHub release page:
+`https://github.com/SuperBeastsAI/SuperBeastsAI-Models/tree/main/SuperPopColorAdjustment/`  
+and drop the `.onnx` file into `custom_nodes/ComfyUI-SuperBeasts/models/`.
+
+**License:**
+Weights are SPCA-Community-NoSaaS. Local/client use OK; no public SaaS redistribution. <a href="https://github.com/SuperBeastsAI/SuperBeastsAI-Models/blob/main/SuperPopColorAdjustment/LICENSE.txt" target="_blank">See model repo</a>.
 
 
 <h2>Same settings multiple situations corrected</h2>
@@ -226,9 +233,10 @@ Happy generating!!
 |-----------|-----------|-------|
 | Image | Image dimensions ideally <2048px | Techncially supports any size but due to 512px patch size local adjustments become increasingly obvious as size increases. |
 | Max strength  | **1.0**   | 0.5-2.0 for subtle ➜ dramatic |
-| Count     | 1         | Increase for automatic strength batching up to your max strength value |
-| Overlap   | 0.4       | Up to 0.9 if GPU / Compute permits |
-| Initial context for batch | False | True (Experimental - may be useful for tone-locked video frames) |
+| Count     | 1         | Increase for automatic strength batching up to your max strength value. E.g. Max strength 1.0 with count 2.0 runs strength at 0.5 and 1.0 outputting 2 images |
+| Overlap   | At least 0.3-0.4 if image is >512px  | Ideally up to 0.9 if GPU / Compute permits for maximum quality. |
+| Context (Image) | Leave empty | See detailed notes on context below. |
+| Initial context for batch | False | Use the first input images context for all images processed. If set to True this may be useful to reduce correction variation across the batch E.g. Video frames |
 
 ### Known limitations / quirks
 
@@ -271,19 +279,6 @@ down-scaled or abstract images work great but this only plays a small role in th
 Works out-of-the-box on CPU via `onnxruntime`.  For **10×** speed improvement ensure ComfyUI can use the `CUDAExecutionProvider` by using onnxruntime-gpu with the hardware that allows this. 
 This node print out the currently available providers into the ComfyUI server logs if you need to check this. 
 
-
-### Licensing & weight downloads
-
-This model is released under the **SPCA-RAIL licence**.  Full text lives in the model repository:
-<https://github.com/SuperBeastsAI/SuperBeastsAI-Models/blob/main/SuperPopColorAdjustment/LICENSE.txt>
-• Free for personal & commercial *output* use.  
-• Redistribution / hosting of the weights is **not** allowed without permission.
-
-Weights are automatically downloaded the first time the **SB Load Model** node runs.  If you
-prefer manual download, grab them from the GitHub release page:
-
-`https://github.com/SuperBeastsAI/SuperBeastsAI-Models/tree/main/SuperPopColorAdjustment/downloads/`  
-and drop the `.onnx` file into `custom_nodes/ComfyUI-SuperBeasts/models/`.
 
 ---
 
