@@ -122,6 +122,19 @@ the vibrant palette, deep blacks and crisp highlights that define my style.
     <td><img src="examples/SPCA/20a.png" width="100%" alt="Original 20"></td>
     <td><img src="examples/SPCA/20b.png" width="100%" alt="S.P.C.A 20"></td>
   </tr>
+
+  <tr>
+    <td><img src="examples/SPCA/29a.png" width="100%" alt="Original 19"></td>
+    <td><img src="examples/SPCA/29b.png" width="100%" alt="S.P.C.A 19"></td>
+    <td><img src="examples/SPCA/30a.png" width="100%" alt="Original 20"></td>
+    <td><img src="examples/SPCA/30b.png" width="100%" alt="S.P.C.A 20"></td>
+  </tr>
+    <tr>
+    <td><img src="examples/SPCA/32a.png" width="100%" alt="Original 19"></td>
+    <td><img src="examples/SPCA/32b.png" width="100%" alt="S.P.C.A 19"></td>
+    <td><img src="examples/SPCA/31a.png" width="100%" alt="Original 20"></td>
+    <td><img src="examples/SPCA/31b.png" width="100%" alt="S.P.C.A 20"></td>
+  </tr>
   <tr>
 
   </tr>
