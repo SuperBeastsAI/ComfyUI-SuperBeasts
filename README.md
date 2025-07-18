@@ -20,21 +20,22 @@ This repository contains custom nodes for ComfyUI created and used by SuperBeast
 
 ## Super Pop Color Adjustment (SuperBeasts.AI)
 
-### Why “Super Pop”?
+Bring the **SuperBeasts “pop”** to any image in one click. Months of solo R&D, hundreds of hand‑tuned colour‑grade examples, and a custom residual CNN trained to push **vibrant palette, deep blacks, crisp highlights, and HDR bite** with ease.
 
-Months of solo R&D, hundreds of hand-tuned colour-grade examples and a brand-new residual
-CNN culminated in a node that gives every image the **SuperBeasts “pop”** in
-one click. No LUT-hunting, no 37-slider wrestling – just feed in your art and let the model
-do the heavy lifting. I personally curated and corrected every training frame to lock down
-the vibrant palette, deep blacks and crisp highlights that define my style.
+### Why I built it
+Everything I post gets graded: lift blacks, pull whites, bend curves, punch colour. Existing auto tools (and many AI outputs — looking at you, muddy yellow “whites”) just weren’t landing, especially across batches or iterative generations. Training my own lightweight correction model let me reclaim hours of post and lock in a consistent SuperBeasts look I could reuse — and share.
 
-> **Why I built it**  
-> Every piece I create ends up in post-processing: lifting blacks, pulling
-> whites, bending colour curves for that punchy HDR look. Auto tools in other applicatiosn were just not hitting the mark. 
-> Using AI generators I loved the creative range, but found the that for tools such as ChatGPT the results could lean towards 
-> muted yellow-brown tones where you would expect white and these often get worse over iterations. 
-> Training a model to apply my signature grade automatically felt like the perfect way to learn more about AI models and also to reclaim that time — and
-> share the benefits with everyone else. So enjoy Super Pop Colour Adjustments!
+**Personal project, shared as‑is.**  
+Works great across my SuperBeasts production flow and a wide mix of test art, but it’s *not* exhaustively validated on every style, lighting condition, or colour space. Expect edge cases, occasional overcorrection, and behaviour that varies with resolution/patch overlap. Please experiment and let me know what you think!
+
+If you want to show support please take a momenet to follow me on Instagram <a href="https://www.instagram.com/SuperBeasts.AI" target="_blank">@SuperBeasts.AI</a>
+
+Happy generating!!
+
+
+<h2>Same settings multiple situations corrected</h2>
+
+<h3>Highlights/Shadows Correction</h3>
 
 <table width="100%">
   <tr>
@@ -44,105 +45,158 @@ the vibrant palette, deep blacks and crisp highlights that define my style.
     <td style="width:25%" width="25%">SPCA</td>
   </tr>
   <tr>
-    <td>
-      <img src="examples/SPCA/1a.png"
-     data-anim="examples/SPCA/1b.png"
-     alt="Hover animation"
-     onmouseover="this.src=this.dataset.anim"
-     onmouseout="this.src='examples/SPCA/1a.png'">
-    <img src="examples/SPCA/1a.png" width="100%" alt="Original 1"></td>
+    <td><img src="examples/SPCA/1a.png" width="100%" alt="Original 1"></td>
     <td><img src="examples/SPCA/1b.png" width="100%" alt="S.P.C.A 1"></td>
-    <td><img src="examples/SPCA/2a.png" width="100%" alt="Original 2"></td>
-    <td><img src="examples/SPCA/2b.png" width="100%" alt="S.P.C.A 2"></td>
+    <td><img src="examples/SPCA/5a.png" width="100%" alt="Original 2"></td>
+    <td><img src="examples/SPCA/5b.png" width="100%" alt="S.P.C.A 2"></td>
+  </tr>
+  <tr>
+    <td><img src="examples/SPCA/2a.png" width="100%" alt="Original 3"></td>
+    <td><img src="examples/SPCA/2b.png" width="100%" alt="S.P.C.A 3"></td>
+    <td><img src="examples/SPCA/4a.png" width="100%" alt="Original 4"></td>
+    <td><img src="examples/SPCA/4b.png" width="100%" alt="S.P.C.A 4"></td>
+  </tr>
+</table>
+
+<h3>Dull/Washed Out/Muted Correction</h3>
+
+<table width="100%">
+  <tr>
+    <td style="width:25%" width="25%">Original</td>
+    <td style="width:25%" width="25%">SPCA</td>
+    <td style="width:25%" width="25%">Original</td>
+    <td style="width:25%" width="25%">SPCA</td>
+  </tr>
+  <tr>
+    <td><img src="examples/SPCA/41a.png" width="100%" alt="Original 1"></td>
+    <td><img src="examples/SPCA/41b.png" width="100%" alt="S.P.C.A 1"></td>
+    <td><img src="examples/SPCA/16a.png" width="100%" alt="Original 2"></td>
+    <td><img src="examples/SPCA/16b.png" width="100%" alt="S.P.C.A 2"></td>
   </tr>
   <tr>
     <td><img src="examples/SPCA/27a.png" width="100%" alt="Original 3"></td>
     <td><img src="examples/SPCA/27b.png" width="100%" alt="S.P.C.A 3"></td>
-    <td><img src="examples/SPCA/4a.png" width="100%" alt="Original 4"></td>
-    <td><img src="examples/SPCA/4b.png" width="100%" alt="S.P.C.A 4"></td>
+    <td><img src="examples/SPCA/24a.png" width="100%" alt="Original 4"></td>
+    <td><img src="examples/SPCA/24b.png" width="100%" alt="S.P.C.A 4"></td>
   </tr>
-    <tr>
-    <td><img src="examples/SPCA/21a.png" width="100%" alt="Original 5"></td>
-    <td><img src="examples/SPCA/21b.png" width="100%" alt="S.P.C.A 5"></td>
-    <td><img src="examples/SPCA/22a.png" width="100%" alt="Original 6"></td>
-    <td><img src="examples/SPCA/22b.png" width="100%" alt="S.P.C.A 6"></td>
-  </tr>
-    <tr>
-    <td><img src="examples/SPCA/25a.png" width="100%" alt="Original 5"></td>
-    <td><img src="examples/SPCA/25b.png" width="100%" alt="S.P.C.A 5"></td>
-    <td><img src="examples/SPCA/26a.png" width="100%" alt="Original 6"></td>
-    <td><img src="examples/SPCA/26b.png" width="100%" alt="S.P.C.A 6"></td>
-  </tr>
-  <tr>
-    <td><img src="examples/SPCA/23a.png" width="100%" alt="Original 5"></td>
-    <td><img src="examples/SPCA/23b.png" width="100%" alt="S.P.C.A 5"></td>
-    <td><img src="examples/SPCA/28a.png" width="100%" alt="Original 6"></td>
-    <td><img src="examples/SPCA/28b.png" width="100%" alt="S.P.C.A 6"></td>
-  </tr>
+</table>
 
-  <tr>
-    <td><img src="examples/SPCA/7a.png" width="100%" alt="Original 7"></td>
-    <td><img src="examples/SPCA/7b.png" width="100%" alt="S.P.C.A 7"></td>
-    <td><img src="examples/SPCA/8a.png" width="100%" alt="Original 8"></td>
-    <td><img src="examples/SPCA/8b.png" width="100%" alt="S.P.C.A 8"></td>
-  </tr>
 
-  <tr>
-    <td><img src="examples/SPCA/9a.png" width="100%" alt="Original 9"></td>
-    <td><img src="examples/SPCA/9b.png" width="100%" alt="S.P.C.A 9"></td>
-    <td><img src="examples/SPCA/10a.png" width="100%" alt="Original 10"></td>
-    <td><img src="examples/SPCA/10b.png" width="100%" alt="S.P.C.A 10"></td>
-  </tr>
+<h3>Black/White Levels & Contrast Correction</h3>
 
+<table width="100%">
   <tr>
-    <td><img src="examples/SPCA/11a.png" width="100%" alt="Original 11"></td>
-    <td><img src="examples/SPCA/11b.png" width="100%" alt="S.P.C.A 11"></td>
-    <td><img src="examples/SPCA/12a.png" width="100%" alt="Original 12"></td>
-    <td><img src="examples/SPCA/12b.png" width="100%" alt="S.P.C.A 12"></td>
+    <td style="width:25%" width="25%">Original</td>
+    <td style="width:25%" width="25%">SPCA</td>
+    <td style="width:25%" width="25%">Original</td>
+    <td style="width:25%" width="25%">SPCA</td>
   </tr>
+  <tr>
+    <td><img src="examples/SPCA/6a.png" width="100%" alt="Original 1"></td>
+    <td><img src="examples/SPCA/6b.png" width="100%" alt="S.P.C.A 1"></td>
+    <td><img src="examples/SPCA/9a.png" width="100%" alt="Original 2"></td>
+    <td><img src="examples/SPCA/9b.png" width="100%" alt="S.P.C.A 2"></td>
+  </tr>
+  <tr>
+    <td><img src="examples/SPCA/38a.png" width="100%" alt="Original 3"></td>
+    <td><img src="examples/SPCA/38b.png" width="100%" alt="S.P.C.A 3"></td>
+    <td><img src="examples/SPCA/26a.png" width="100%" alt="Original 4"></td>
+    <td><img src="examples/SPCA/26b.png" width="100%" alt="S.P.C.A 4"></td>
+  </tr>
+</table>
 
-  <tr>
-    <td><img src="examples/SPCA/13a.png" width="100%" alt="Original 13"></td>
-    <td><img src="examples/SPCA/13b.png" width="100%" alt="S.P.C.A 13"></td>
-    <td><img src="examples/SPCA/14a.png" width="100%" alt="Original 14"></td>
-    <td><img src="examples/SPCA/14b.png" width="100%" alt="S.P.C.A 14"></td>
-  </tr>
 
-  <tr>
-    <td><img src="examples/SPCA/15a.png" width="100%" alt="Original 15"></td>
-    <td><img src="examples/SPCA/15b.png" width="100%" alt="S.P.C.A 15"></td>
-    <td><img src="examples/SPCA/16a.png" width="100%" alt="Original 16"></td>
-    <td><img src="examples/SPCA/16b.png" width="100%" alt="S.P.C.A 16"></td>
-  </tr>
+<h3>Color Correction</h3>
 
+<table width="100%">
   <tr>
-    <td><img src="examples/SPCA/17a.png" width="100%" alt="Original 17"></td>
-    <td><img src="examples/SPCA/17b.png" width="100%" alt="S.P.C.A 17"></td>
-    <td><img src="examples/SPCA/18a.png" width="100%" alt="Original 18"></td>
-    <td><img src="examples/SPCA/18b.png" width="100%" alt="S.P.C.A 18"></td>
+    <td style="width:25%" width="25%">Original</td>
+    <td style="width:25%" width="25%">SPCA</td>
+    <td style="width:25%" width="25%">Original</td>
+    <td style="width:25%" width="25%">SPCA</td>
   </tr>
+  <tr>
+    <td><img src="examples/SPCA/7a.png" width="100%" alt="Original 1"></td>
+    <td><img src="examples/SPCA/7b.png" width="100%" alt="S.P.C.A 1"></td>
+    <td><img src="examples/SPCA/14a.png" width="100%" alt="Original 2"></td>
+    <td><img src="examples/SPCA/14b.png" width="100%" alt="S.P.C.A 2"></td>
+  </tr>
+  <tr>
+    <td><img src="examples/SPCA/13a.png" width="100%" alt="Original 3"></td>
+    <td><img src="examples/SPCA/13b.png" width="100%" alt="S.P.C.A 3"></td>
+    <td><img src="examples/SPCA/34a.png" width="100%" alt="Original 4"></td>
+    <td><img src="examples/SPCA/34b.png" width="100%" alt="S.P.C.A 4"></td>
+  </tr>
+</table>
 
-  <tr>
-    <td><img src="examples/SPCA/19a.png" width="100%" alt="Original 19"></td>
-    <td><img src="examples/SPCA/19b.png" width="100%" alt="S.P.C.A 19"></td>
-    <td><img src="examples/SPCA/20a.png" width="100%" alt="Original 20"></td>
-    <td><img src="examples/SPCA/20b.png" width="100%" alt="S.P.C.A 20"></td>
-  </tr>
 
-  <tr>
-    <td><img src="examples/SPCA/29a.png" width="100%" alt="Original 19"></td>
-    <td><img src="examples/SPCA/29b.png" width="100%" alt="S.P.C.A 19"></td>
-    <td><img src="examples/SPCA/30a.png" width="100%" alt="Original 20"></td>
-    <td><img src="examples/SPCA/30b.png" width="100%" alt="S.P.C.A 20"></td>
-  </tr>
-    <tr>
-    <td><img src="examples/SPCA/32a.png" width="100%" alt="Original 19"></td>
-    <td><img src="examples/SPCA/32b.png" width="100%" alt="S.P.C.A 19"></td>
-    <td><img src="examples/SPCA/31a.png" width="100%" alt="Original 20"></td>
-    <td><img src="examples/SPCA/31b.png" width="100%" alt="S.P.C.A 20"></td>
-  </tr>
-  <tr>
+<h3>Vibrancy Improvements</h3>
 
+<table width="100%">
+  <tr>
+    <td style="width:25%" width="25%">Original</td>
+    <td style="width:25%" width="25%">SPCA</td>
+    <td style="width:25%" width="25%">Original</td>
+    <td style="width:25%" width="25%">SPCA</td>
+  </tr>
+  <tr>
+    <td><img src="examples/SPCA/25a.png" width="100%" alt="Original 1"></td>
+    <td><img src="examples/SPCA/25b.png" width="100%" alt="S.P.C.A 1"></td>
+    <td><img src="examples/SPCA/21a.png" width="100%" alt="Original 2"></td>
+    <td><img src="examples/SPCA/21b.png" width="100%" alt="S.P.C.A 2"></td>
+  </tr>
+  <tr>
+    <td><img src="examples/SPCA/32a.png" width="100%" alt="Original 3"></td>
+    <td><img src="examples/SPCA/32b.png" width="100%" alt="S.P.C.A 3"></td>
+    <td><img src="examples/SPCA/28a.png" width="100%" alt="Original 4"></td>
+    <td><img src="examples/SPCA/28b.png" width="100%" alt="S.P.C.A 4"></td>
+  </tr>
+</table>
+
+<h3>Restoration</h3>
+<p>Potential uses in old photo restorations and corrections.</p>
+
+<table width="100%">
+  <tr>
+    <td style="width:25%" width="25%">Original</td>
+    <td style="width:25%" width="25%">SPCA</td>
+    <td style="width:25%" width="25%">Original</td>
+    <td style="width:25%" width="25%">SPCA</td>
+  </tr>
+  <tr>
+    <td><img src="examples/SPCA/18a.png" width="100%" alt="Original 1"></td>
+    <td><img src="examples/SPCA/18b.png" width="100%" alt="S.P.C.A 1"></td>
+    <td><img src="examples/SPCA/39a.png" width="100%" alt="Original 2"></td>
+    <td><img src="examples/SPCA/39b.png" width="100%" alt="S.P.C.A 2"></td>
+  </tr>
+  <tr>
+    <td><img src="examples/SPCA/37a.png" width="100%" alt="Original 3"></td>
+    <td><img src="examples/SPCA/37b.png" width="100%" alt="S.P.C.A 3"></td>
+    <td><img src="examples/SPCA/40a.png" width="100%" alt="Original 4"></td>
+    <td><img src="examples/SPCA/40b.png" width="100%" alt="S.P.C.A 4"></td>
+  </tr>
+</table>
+
+<h3>Color balance correction</h3>
+
+<table width="100%">
+  <tr>
+    <td style="width:25%" width="25%">Original</td>
+    <td style="width:25%" width="25%">SPCA</td>
+    <td style="width:25%" width="25%">Original</td>
+    <td style="width:25%" width="25%">SPCA</td>
+  </tr>
+  <tr>
+    <td><img src="examples/SPCA/18a.png" width="100%" alt="Original 1"></td>
+    <td><img src="examples/SPCA/18b.png" width="100%" alt="S.P.C.A 1"></td>
+    <td><img src="examples/SPCA/16a.png" width="100%" alt="Original 2"></td>
+    <td><img src="examples/SPCA/16b.png" width="100%" alt="S.P.C.A 2"></td>
+  </tr>
+  <tr>
+    <td><img src="examples/SPCA/16a.png" width="100%" alt="Original 3"></td>
+    <td><img src="examples/SPCA/16b.png" width="100%" alt="S.P.C.A 3"></td>
+    <td><img src="examples/SPCA/15a.png" width="100%" alt="Original 4"></td>
+    <td><img src="examples/SPCA/15b.png" width="100%" alt="S.P.C.A 4"></td>
   </tr>
 </table>
 
@@ -183,7 +237,7 @@ the vibrant palette, deep blacks and crisp highlights that define my style.
    settings) to amplify micro-contrast.
 3. **Colour remap** – Plug a palette or reference frame into the *Context* input to nudge the
    final toning toward that colour space.
-4. **Video consistency** – Enable *Initial context for batch* to subtely lock colour across frames (still experimental).
+4. **Video** – Yes it works quite well across video frames! Try experiement with *Initial context for batch* to subtely lock colour across all the processed frames or leave as is for each frame to determine the correction independantly.
 
 ### Understanding the *Context* input
 
@@ -211,7 +265,7 @@ This node print out the currently available providers into the ComfyUI server lo
 ### Licensing & weight downloads
 
 This model is released under the **SPCA-RAIL licence**.  Full text lives in the model repository:
-<https://github.com/SuperBeastsAI/SuperBeastsAI-Models/blob/main/SuperPopColorAdjustment/LICENSE_SUPERPOP.txt>
+<https://github.com/SuperBeastsAI/SuperBeastsAI-Models/blob/main/SuperPopColorAdjustment/LICENSE.txt>
 • Free for personal & commercial *output* use.  
 • Redistribution / hosting of the weights is **not** allowed without permission.
 

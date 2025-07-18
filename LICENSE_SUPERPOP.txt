@@ -1,9 +1,9 @@
 # Stub licence notice
 This repository only contains *code* for the Super Pop Color Adjustment node.
 
-The actual model weights are licensed under the **SPCA-RAIL** terms.
-You can find the full licence text in the model repository:
+The actual model weights are licensed under the **SPCA‑CUL v1.0** terms.
 
+You can find the full licence text in the model repository:
 https://github.com/SuperBeastsAI/SuperBeastsAI-Models/blob/main/SuperPopColorAdjustment/LICENSE.txt
 
 If you plan to use the weights, you must agree to the terms at the link above. 
