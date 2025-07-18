@@ -1,4 +1,4 @@
-# SuperBeastsAI Nodes
+# SuperBeasts.AI Nodes & Custom Models
 
 This repository contains custom nodes for ComfyUI created and used by SuperBeasts.AI (@SuperBeasts.AI on Instagram)
 
@@ -14,13 +14,11 @@ This repository contains custom nodes for ComfyUI created and used by SuperBeast
 - 27/03/24: Released and also pushed an update to resolve batched images for videos etc
 
 ---
-# Super Beasts Custom Models (and nodes)
+# Super Pop Color Adjustment (SuperBeasts.AI)
 
 ![SPCA-Header](examples/SPCA-Header.webp)
 
-## Super Pop Color Adjustment (SuperBeasts.AI)
-
-Bring the **SuperBeasts “pop”** to any image in one click. Months of solo R&D, hundreds of hand‑tuned colour‑grade examples, and a custom residual CNN trained to push **vibrant palette, deep blacks, crisp highlights, and HDR bite** with ease.
+Bring the **SuperBeasts “pop”** to any image in one click. Months of solo R&D, hundreds of hand‑tuned colour‑grade examples, and a custom residual color correction model trained to push **vibrant palette, deep blacks, crisp highlights, and HDR bite** with ease.
 
 ### Why I built it
 Everything I post gets graded: lift blacks, pull whites, bend curves, punch colour. Existing auto tools (and many AI outputs — looking at you, muddy yellow “whites”) just weren’t landing, especially across batches or iterative generations. Training my own lightweight correction model let me reclaim hours of post and lock in a consistent SuperBeasts look I could reuse — and share.
@@ -31,6 +29,8 @@ Works great across my SuperBeasts production flow and a wide mix of test art, bu
 If you want to show support please take a momenet to follow me on Instagram <a href="https://www.instagram.com/SuperBeasts.AI" target="_blank">@SuperBeasts.AI</a>
 
 Happy generating!!
+
+---
 
 ### Using Super Pop
 
@@ -49,16 +49,16 @@ and drop the `.onnx` file into `custom_nodes/ComfyUI-SuperBeasts/models/`.
 Weights are SPCA-Community-NoSaaS. Local/client use OK; no public SaaS redistribution. <a href="https://github.com/SuperBeastsAI/SuperBeastsAI-Models/blob/main/SuperPopColorAdjustment/LICENSE.txt" target="_blank">See model repo</a>.
 
 
-<h2>Same settings multiple situations corrected</h2>
+<h2>Same settings multiple corrections (Stength: 1.0)</h2>
 
 <h3>Highlights/Shadows Correction</h3>
 
 <table width="100%">
   <tr>
     <td style="width:25%" width="25%">Original</td>
-    <td style="width:25%" width="25%">SPCA</td>
+    <td style="width:25%" width="25%">S.P.C.A</td>
     <td style="width:25%" width="25%">Original</td>
-    <td style="width:25%" width="25%">SPCA</td>
+    <td style="width:25%" width="25%">S.P.C.A</td>
   </tr>
   <tr>
     <td><img src="examples/SPCA/1a.png" width="100%" alt="Original 1"></td>
@@ -79,9 +79,9 @@ Weights are SPCA-Community-NoSaaS. Local/client use OK; no public SaaS redistrib
 <table width="100%">
   <tr>
     <td style="width:25%" width="25%">Original</td>
-    <td style="width:25%" width="25%">SPCA</td>
+    <td style="width:25%" width="25%">S.P.C.A</td>
     <td style="width:25%" width="25%">Original</td>
-    <td style="width:25%" width="25%">SPCA</td>
+    <td style="width:25%" width="25%">S.P.C.A</td>
   </tr>
   <tr>
     <td><img src="examples/SPCA/41a.png" width="100%" alt="Original 1"></td>
@@ -103,9 +103,9 @@ Weights are SPCA-Community-NoSaaS. Local/client use OK; no public SaaS redistrib
 <table width="100%">
   <tr>
     <td style="width:25%" width="25%">Original</td>
-    <td style="width:25%" width="25%">SPCA</td>
+    <td style="width:25%" width="25%">S.P.C.A</td>
     <td style="width:25%" width="25%">Original</td>
-    <td style="width:25%" width="25%">SPCA</td>
+    <td style="width:25%" width="25%">S.P.C.A</td>
   </tr>
   <tr>
     <td><img src="examples/SPCA/6a.png" width="100%" alt="Original 1"></td>
@@ -127,9 +127,9 @@ Weights are SPCA-Community-NoSaaS. Local/client use OK; no public SaaS redistrib
 <table width="100%">
   <tr>
     <td style="width:25%" width="25%">Original</td>
-    <td style="width:25%" width="25%">SPCA</td>
+    <td style="width:25%" width="25%">S.P.C.A</td>
     <td style="width:25%" width="25%">Original</td>
-    <td style="width:25%" width="25%">SPCA</td>
+    <td style="width:25%" width="25%">S.P.C.A</td>
   </tr>
   <tr>
     <td><img src="examples/SPCA/7a.png" width="100%" alt="Original 1"></td>
@@ -151,9 +151,9 @@ Weights are SPCA-Community-NoSaaS. Local/client use OK; no public SaaS redistrib
 <table width="100%">
   <tr>
     <td style="width:25%" width="25%">Original</td>
-    <td style="width:25%" width="25%">SPCA</td>
+    <td style="width:25%" width="25%">S.P.C.A</td>
     <td style="width:25%" width="25%">Original</td>
-    <td style="width:25%" width="25%">SPCA</td>
+    <td style="width:25%" width="25%">S.P.C.A</td>
   </tr>
   <tr>
     <td><img src="examples/SPCA/25a.png" width="100%" alt="Original 1"></td>
@@ -175,9 +175,9 @@ Weights are SPCA-Community-NoSaaS. Local/client use OK; no public SaaS redistrib
 <table width="100%">
   <tr>
     <td style="width:25%" width="25%">Original</td>
-    <td style="width:25%" width="25%">SPCA</td>
+    <td style="width:25%" width="25%">S.P.C.A</td>
     <td style="width:25%" width="25%">Original</td>
-    <td style="width:25%" width="25%">SPCA</td>
+    <td style="width:25%" width="25%">S.P.C.A</td>
   </tr>
   <tr>
     <td><img src="examples/SPCA/18a.png" width="100%" alt="Original 1"></td>
@@ -190,29 +190,6 @@ Weights are SPCA-Community-NoSaaS. Local/client use OK; no public SaaS redistrib
     <td><img src="examples/SPCA/37b.png" width="100%" alt="S.P.C.A 3"></td>
     <td><img src="examples/SPCA/40a.png" width="100%" alt="Original 4"></td>
     <td><img src="examples/SPCA/40b.png" width="100%" alt="S.P.C.A 4"></td>
-  </tr>
-</table>
-
-<h3>Color balance correction</h3>
-
-<table width="100%">
-  <tr>
-    <td style="width:25%" width="25%">Original</td>
-    <td style="width:25%" width="25%">SPCA</td>
-    <td style="width:25%" width="25%">Original</td>
-    <td style="width:25%" width="25%">SPCA</td>
-  </tr>
-  <tr>
-    <td><img src="examples/SPCA/18a.png" width="100%" alt="Original 1"></td>
-    <td><img src="examples/SPCA/18b.png" width="100%" alt="S.P.C.A 1"></td>
-    <td><img src="examples/SPCA/16a.png" width="100%" alt="Original 2"></td>
-    <td><img src="examples/SPCA/16b.png" width="100%" alt="S.P.C.A 2"></td>
-  </tr>
-  <tr>
-    <td><img src="examples/SPCA/16a.png" width="100%" alt="Original 3"></td>
-    <td><img src="examples/SPCA/16b.png" width="100%" alt="S.P.C.A 3"></td>
-    <td><img src="examples/SPCA/15a.png" width="100%" alt="Original 4"></td>
-    <td><img src="examples/SPCA/15b.png" width="100%" alt="S.P.C.A 4"></td>
   </tr>
 </table>
 
