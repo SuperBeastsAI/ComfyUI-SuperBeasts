@@ -44,7 +44,13 @@ the vibrant palette, deep blacks and crisp highlights that define my style.
     <td style="width:25%" width="25%">SPCA</td>
   </tr>
   <tr>
-    <td><img src="examples/SPCA/1a.png" width="100%" alt="Original 1"></td>
+    <td>
+      <img src="examples/SPCA/1a.png"
+     data-anim="examples/SPCA/1b.png"
+     alt="Hover animation"
+     onmouseover="this.src=this.dataset.anim"
+     onmouseout="this.src='examples/SPCA/1a.png'">
+    <img src="examples/SPCA/1a.png" width="100%" alt="Original 1"></td>
     <td><img src="examples/SPCA/1b.png" width="100%" alt="S.P.C.A 1"></td>
     <td><img src="examples/SPCA/2a.png" width="100%" alt="Original 2"></td>
     <td><img src="examples/SPCA/2b.png" width="100%" alt="S.P.C.A 2"></td>
