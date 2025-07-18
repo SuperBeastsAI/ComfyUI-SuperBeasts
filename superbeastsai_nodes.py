@@ -25,7 +25,7 @@ else:
 # Remote model download helper
 # ---------------------------------------------------------------------------
 
-# Base URL for hosting – we append <family>/downloads/<version>/<filename>
+# Base URL for hosting – we append <family>/<version>/<filename>
 _REMOTE_MODEL_BASE_URL = "https://raw.githubusercontent.com/SuperBeastsAI/SuperBeastsAI-Models/main/"
 
 # Registry of published model families → version → filename
@@ -212,7 +212,7 @@ class SBLoadModel:
         model_path = os.path.join(models_dir, filename)
 
         if not os.path.isfile(model_path):
-            rel_path = f"{family}/downloads/{version}/{filename}"
+            rel_path = f"{family}/{version}/{filename}"
             try:
                 _download_remote_model(rel_path, model_path)
             except Exception as e:
