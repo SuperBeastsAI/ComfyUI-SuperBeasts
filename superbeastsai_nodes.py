@@ -205,16 +205,17 @@ def _discover_sb_models(models_dir: str):
 
 
 class SBLoadModel:
-    """Load a SuperBeasts colour-adjustment model (downloads if missing).
-
-    ⚠ **License:** Downloaded weights are licensed under SPCA-Community-NoSaaS.
-    Local / personal / client use OK. Public SaaS/API redistribution requires a license.
-    See: https://github.com/SuperBeastsAI/SuperBeastsAI-Models/tree/main/SuperPopColorAdjustment
-
+    """Load a SuperBeasts colour-adjustment model (downloads if missing)./n
+    
     Select a model from the dropdown. Use Family/Version entries (e.g., SuperPopColorAdjustment/latest)
-    to auto-download from the official model registry when not found locally.
+    to auto-download from the official model registry when not found locally./n
+    
+    ⚠ License: Downloaded weights are licensed under SPCA-Community-NoSaaS.
+    Local / personal / commercial use OK. SaaS/API redistribution using this model requires a license.
+    See: https://github.com/SuperBeastsAI/SuperBeastsAI-Models/tree/main/SuperPopColorAdjustment
     """
-
+    # Shown in ComfyUI when the user clicks the "?" icon on the node title-bar.
+    DESCRIPTION = __doc__
 
     _model_cache: Dict[str, Dict[str, Any]] = {}
 
@@ -481,6 +482,7 @@ def apply_to_batch(func):
     return wrapper
 
 class HDREffects:
+    DESCRIPTION = "Apply an HDR-style tone-mapping effect with separate control over shadows, highlights, gamma, contrast and colour boost. Accepts a batch of images and returns the processed batch."
     @classmethod
     def INPUT_TYPES(cls):
         return {'required': {'image': ('IMAGE', {'default': None}),
@@ -543,9 +545,7 @@ class HDREffects:
         return pil2tensor(color_adjusted)
 
 class MakeResizedMaskBatch:
-    """
-    Creates a batch of masks from multiple individual masks or batches.
-    """
+    DESCRIPTION = "Combine up to 12 individual masks/batches into one mask batch, automatically sizing/cropping each mask to the requested width/height. Useful for building consistent video masks."
     def __init__(self):
         pass
 
@@ -649,6 +649,7 @@ def blend_images(image1, image2, alpha):
     return Image.blend(image1, image2, alpha)
 
 class Deflicker:
+    DESCRIPTION = "Experimental high-level deflicker pass for video/animation. Analyses brightness across neighbouring frames and blends, denoises and smooths gradients to reduce global flicker."
     @classmethod
     def INPUT_TYPES(cls):
         return {
@@ -736,6 +737,7 @@ def temporal_smoothing(frames, window_size):
     return smoothed_frames
 
 class PixelDeflicker:
+    DESCRIPTION = "Experimental per-pixel temporal smoothing for animation. Operates in a sliding window to average noisy pixels while preserving detail, helping mitigate small-scale flicker."
     @classmethod
     def INPUT_TYPES(cls):
         return {
@@ -820,6 +822,7 @@ def resize_and_crop(pil_img, target_width, target_height):
     return cropped_img
 
 class ImageBatchManagement:
+    DESCRIPTION = "Resize, crop, limit, optionally shuffle or manually reorder an image batch so all frames match the specified resolution and sequence order. Returns the new batch and a CSV string listing filenames."
     def __init__(self):
         pass
 
@@ -873,6 +876,7 @@ class ImageBatchManagement:
 
 
 class MaskBatchManagement:
+    DESCRIPTION = "Resize, crop and re-order a batch of masks so they all share the same dimensions, or to match a new manual order list."
     def __init__(self):
         pass
 
@@ -916,6 +920,7 @@ class MaskBatchManagement:
         return (result,)
 
 class StringListManager:
+    DESCRIPTION = "Re-order or time-expand a list of strings (e.g. prompts or captions) so each item can repeat for N frames. Outputs the adjusted list as a single newline-separated string."
     def __init__(self):
         pass
 
@@ -955,11 +960,10 @@ class StringListManager:
 class SuperPopColorAdjustment:
     """Generate a series of color-adjusted images by blending the residual produced by a model-based correction with the original image at different strengths.
 
-    The node calls the provided *SBModel* once to obtain a fully-corrected reference image.  It then blends that result back into the
+    The node calls the provided *SBModel* once to obtain a fully-corrected reference image (Requires use of "SB Load Model" node).  It then blends that result back into the
     original image `count` times using evenly spaced strength values between `max_strength/count` and `max_strength` (inclusive).
-    If the supplied model object is not callable or raises an exception, a simple colour-enhancement fallback is used so the node still
-    produces output.
     """
+    DESCRIPTION = __doc__
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -977,8 +981,11 @@ class SuperPopColorAdjustment:
             }
         }
 
-    RETURN_TYPES = ("IMAGE", )
-    RETURN_NAMES = ("images", )
+    # primary output: processed image batch
+    # secondary output: one metadata dict per output image so Save Image can
+    # embed the strength value automatically via its *extra_pnginfo* socket.
+    RETURN_TYPES = ("IMAGE", "STRING")
+    RETURN_NAMES = ("images", "metadata")
     FUNCTION = "apply_adjustment"
     CATEGORY = "SuperBeastsAI/Image"
 
@@ -1117,7 +1124,10 @@ class SuperPopColorAdjustment:
     def apply_adjustment(self, model, image, max_strength=1.0, count=1, overlap=0.5,
                          initial_context_for_batch=False, context=None):
         # Ensure *image* is a batch tensor – iterate over each frame
-        output_tensors = []
+        output_tensors: list[torch.Tensor] = []
+        # collect a per-image prefix so downstream Save Image nodes can be
+        # automatically mapped over lists (one prefix per image).
+        filename_prefixes: list[str] = []
 
         # Cache for the first computed context thumbnail when reusing across batch
         ctx_np_cached = None
@@ -1257,18 +1267,16 @@ class SuperPopColorAdjustment:
                 blended_np = np.clip(orig_np_full + residual_full * s, 0.0, 1.0)
                 blended_pil = Image.fromarray((blended_np * 255.0).astype(np.uint8))
                 output_tensors.append(pil2tensor(blended_pil))
-
+                filename_prefixes.append(f"SPCA_{s:.2f}_")
             # Update progress bar
             if pbar is not None:
                 pbar.update_absolute(idx + 1)
 
-        # Concatenate along batch dimension
-        if output_tensors:
-            batch_tensor = torch.cat(output_tensors, dim=0)
-        else:
-            # Return an empty tensor with correct dimensions if no outputs generated
-            batch_tensor = image
-        return (batch_tensor, )
+        if not output_tensors:
+            # fallback: no adjustment produced – keep original first frame
+            output_tensors = [image]
+
+        return (output_tensors, filename_prefixes)
 
 NODE_CLASS_MAPPINGS = {
     'HDR Effects (SuperBeasts.AI)': HDREffects,
