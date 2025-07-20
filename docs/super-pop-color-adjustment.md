@@ -25,9 +25,6 @@ Happy generating!!
 3b. Input source image and tune *Max Strength*, *Count*, *Overlap* (recommendations below)
 4. Optional - Use the **Super Pop Residual Blend (SuperBeasts.AI)** for full control of the strength. (Useful to experiement with strength settings without repeat runs of the model)
 
-Download the sample workflow: 
-SuperBeasts.AI - Super Pop Color Adjustment
-
 **Auto model weight download:**
 Weights are automatically downloaded the first time the **SB Load Model** node runs using a specific version or 'latest'.
 If you prefer manual download, grab them from the GitHub release page:
@@ -185,16 +182,6 @@ Local/client use OK; no public SaaS redistribution.
 </table>
 
 
-### How it works
-
-1. **SB Load Model** node loads the ONNX-formatted colour-adjustment network
-    (`models/SuperBeasts_ColorAdjustment_512px_V1.onnx`).
-2. The model analyses the image in 512 × 512 patches, predicting a residual colour grade.
-3. Patches are seamlessly stitched back with configurable **strength**, **count** (variant
-    batching) and **overlap** for large-resolution output.
-4. A 64 × 64 **context** thumbnail guides the global colour mapping – leave it empty for
-    natural results or experiment with creative transfers.
-
 ### Recommended quick-start
 
 | Parameter | Suggested | Notes |
@@ -206,8 +193,19 @@ Local/client use OK; no public SaaS redistribution.
 | Context (Image) | Leave empty | See detailed notes on context below. |
 | Initial context for batch | False | Use the first input images context for all images processed. If set to True this may be useful to reduce correction variation across the batch E.g. Video frames |
 
+### How it works
+
+1. **SB Load Model** node loads the ONNX-formatted colour-adjustment network
+    (`models/SuperBeasts_ColorAdjustment_512px_V1.onnx`).
+2. The model analyses the image in 512 × 512 patches, predicting a residual colour grade.
+3. Patches are seamlessly stitched back with configurable **strength**, **count** (variant
+    batching) and **overlap** for large-resolution output.
+4. A 64 × 64 **context** thumbnail guides the global colour mapping – leave it empty for
+    natural results or experiment with creative transfers.
+
 ### Known limitations / quirks
 
+* **Early and personalised model:** Really this was a model built for personal use for my particular flavour for colour/levels adjustment. It's intentionally meant to be simple and have limited settings so it's not going work for everyone. Future training would be needed to improve it's range or configuration options (Not planned at this stage). 
 * **Patch size sensitivity:** The network works on 512 px tiles – with images above ~2 K you may
   notice slight local exposure shifts.  Pushing *Overlap* up to 0.8-0.9 blends these out much better for higher quality results at the
   cost of extra compute/time.

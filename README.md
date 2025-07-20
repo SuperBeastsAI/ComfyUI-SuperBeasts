@@ -5,23 +5,17 @@
 - **19/07/2025** – *Super Pop Color Adjustment* model + node released.
 ---
 
-# 🔥Super Pop Color Adjustment Model & Nodes
+# 🔥 Available now: Super Pop Color Adjustment Model & Nodes
 
 <p align="center">
-  <img src="docs/assets/examples/SPCA-Header.webp" alt="Super Pop Color Adjustment" width="100%" />
+  <img src="docs/assets/examples/SPCA-Header.webp" alt="SuperBeasts.AI Super Pop Color Adjustment" width="100%" />
 </p>
 
 **Super Pop Color Adjustment** · *A fast residual color adjustment model for vibrant palettes, deep blacks, crisp highlights, HDR bite – in one shot.*
 
-New Nodes, new model and workflow provided.
+New Nodes, new model and workflow provided here or update ComfyUI SuperBeasts.AI nodes for the latest inclusions.
 
-<a href="/docs/super-pop-color-adjustment.md"><table width="100%" cellpadding="0" cellspacing="0" style="background:#000048;">
-  <tr>
-    <td align="center" style="padding:12px 0;">
-      <span style="color:#fff; font-weight:bold; font-size:1.1em;">Learn more about Super Pop Color Adjustment</span>
-    </td>
-  </tr>
-</table></a>
+<a href="/docs/super-pop-color-adjustment.md">Learn more about Super Pop Color Adjustment</a>
 
 ## 📚 Documentation Index
 <table><tr><td valign="top" width="50%">
@@ -31,6 +25,7 @@ New Nodes, new model and workflow provided.
 - [HDR Effects](docs/hdr-effects.md)
 - [Batch Management (Images & Masks)](docs/batch-management.md)
 - [Context & Workflow Tips](docs/context-and-workflow.md)
+
 
 </td><td valign="top" width="50%">
 
