@@ -13,4 +13,4 @@ Repository = "https://github.com/SuperBeastsAI/ComfyUI-SuperBeasts"
 [tool.comfy]
 PublisherId = "superbeastsai"
 DisplayName = "SuperBeasts.AI Nodes"
-Icon = "https://github.com/SuperBeastsAI/ComfyUI-SuperBeasts/tree/dev/docs/assets/icon.png"
+Icon = "https://github.com/SuperBeastsAI/ComfyUI-SuperBeasts/blob/master/docs/assets/icon.png"
