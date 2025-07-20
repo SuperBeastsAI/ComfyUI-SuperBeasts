@@ -28,10 +28,10 @@ SOFTWARE.
 
 [project.urls]
 Repository = "https://github.com/SuperBeastsAI/ComfyUI-SuperBeasts"
-Super Pop Color Adjustement Model (license) = "https://github.com/SuperBeastsAI/SuperBeastsAI-Models/tree/main/SuperPopColorAdjustment"
+"Super Pop Color Adjustement Model (license)" = "https://github.com/SuperBeastsAI/SuperBeastsAI-Models/tree/main/SuperPopColorAdjustment"
 #  Used by Comfy Registry https://comfyregistry.org
 
 [tool.comfy]
 PublisherId = "superbeastsai"
-DisplayName = "ComfyUI-SuperBeasts"
-Icon = ""
+DisplayName = "SuperBeasts.AI Nodes"
+Icon = "https://github.com/SuperBeastsAI/ComfyUI-SuperBeasts/tree/dev/docs/assets/icon.png"

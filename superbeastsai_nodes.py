@@ -49,6 +49,44 @@ _MODEL_REGISTRY: dict[str, dict[str, str]] = {
     # Future models / versions can be added here
 }
 
+# ---------------------------------------------------------------------------
+# Known SHA-256 digests for published weight files.  This allows us to verify
+# that a downloaded (or pre-existing) file has not been tampered with.  When
+# a file’s entry is missing we skip verification so development models can be
+# iterated quickly – but **release** models **should always** have a digest.
+# ---------------------------------------------------------------------------
+
+_MODEL_SHA256: dict[str, str] = {
+    "SuperBeasts_ColorAdjustment_512px_V1.onnx": "a813fbb091dc7849f460f17e54c70cc6e6ef2984589a0ae94ab308d2957dc4ad",
+}
+
+# Helper – compute sha256 digest of a file (hex string)
+def _sha256_of_file(path: str, chunk: int = 1 << 20) -> str:
+    import hashlib
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        while True:
+            blk = f.read(chunk)
+            if not blk:
+                break
+            h.update(blk)
+    return h.hexdigest()
+
+# Verify checksum if we have one for this filename.
+def _verify_model_checksum(path: str):
+    fn = os.path.basename(path)
+    expected = _MODEL_SHA256.get(fn)
+    if not expected:
+        # No checksum known – skip (development weight)
+        return
+    actual = _sha256_of_file(path)
+    if actual != expected:
+        raise RuntimeError(
+            f"Checksum mismatch for '{fn}'.\nExpected: {expected}\nActual:   {actual}\n"
+            "The file appears to be corrupted or has been tampered with. Delete it and rerun to re-download, "
+            "or obtain a clean copy from the official model repository."
+        )
+
 
 def _latest_version(family: str) -> str:
     versions = list(_MODEL_REGISTRY.get(family, {}).keys())
@@ -288,6 +326,13 @@ class SBLoadModel:
                     f"Attempted path: {rel_path}\n{e}"
                 )
 
+        # --- Security: check SHA-256 digest (raises if mismatch) ---
+        try:
+            _verify_model_checksum(model_path)
+        except Exception as _ck_err:
+            # Surface early so users see a clear error in ComfyUI
+            raise
+
         # Use cache if possible
         if model_path in self._model_cache:
             return (self._model_cache[model_path], )
@@ -316,8 +361,19 @@ class SBLoadModel:
             from safetensors.torch import load_file as safe_load
             import importlib.util, sys, pathlib
             model_dir = pathlib.Path(__file__).parent / 'torch_models'
+
+            # ------------------------------------------------------------------
+            # Safety guard – ensure we never import a file outside our plugin dir
+            # even if the relative path is somehow manipulated.
+            # ------------------------------------------------------------------
+
+            module_path = (model_dir / 'contextual_residual_unet_v4.py').resolve()
+            allowed_root = model_dir.resolve()
+            if not str(module_path).startswith(str(allowed_root)):
+                raise RuntimeError("Blocked unsafe module import: path escapes plugin directory")
+
             sys.path.append(str(model_dir))
-            spec = importlib.util.spec_from_file_location('contextual_residual_unet_v4', model_dir / 'contextual_residual_unet_v4.py')
+            spec = importlib.util.spec_from_file_location('contextual_residual_unet_v4', module_path)
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)  # type: ignore
             ContextualResidualUNetV4Torch = module.ContextualResidualUNetV4Torch
