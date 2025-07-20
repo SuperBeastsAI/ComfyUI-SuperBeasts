@@ -1326,59 +1326,61 @@ class SuperPopResidualBlend:
 
     def blend(self, image, residual, strength=1.0):
         """Apply *residual × strength* to *image* per-frame."""
-        # Ensure each input is a list-like batch for easy zip processing.
-        if not isinstance(image, (list, tuple)):
-            image = [image]
-        if not isinstance(residual, (list, tuple)):
-            residual = [residual]
+        import torch
 
-        if len(residual) != len(image):
-            # Simple broadcast: repeat the first residual for all images if counts mismatch
-            residual = residual * len(image)
+        # ------------------------------------------------------------------
+        # Normalise inputs to per-frame lists --------------------------------
+        # ------------------------------------------------------------------
 
-        blended_out: list[np.ndarray] = []
+        if isinstance(image, torch.Tensor):
+            # Split the batch tensor into per-frame tensors (keeps gradients off)
+            image_list = list(image)
+        elif isinstance(image, (list, tuple)):
+            image_list = list(image)
+        else:
+            raise TypeError("Unsupported image type for SuperPopResidualBlend – expected torch.Tensor or list of tensors.")
+
+        if isinstance(residual, torch.Tensor):
+            residual_list = list(residual)
+        elif isinstance(residual, (list, tuple)):
+            residual_list = list(residual)
+        else:
+            raise TypeError("Unsupported residual type for SuperPopResidualBlend – expected torch.Tensor or list of tensors.")
+
+        # Simple broadcast if we only got one residual for many images
+        if len(residual_list) == 1 and len(image_list) > 1:
+            residual_list = residual_list * len(image_list)
+
+        if len(image_list) != len(residual_list):
+            raise ValueError("Mismatch between number of images and residuals ({} vs {}).".format(len(image_list), len(residual_list)))
+
+        # ------------------------------------------------------------------
+        # Blend per frame ----------------------------------------------------
+        # ------------------------------------------------------------------
+
+        blended_frames: list[torch.Tensor] = []
         prefixes: list[str] = []
-        for img_tensor, res_tensor in zip(image, residual):
-            # Tensors → numpy, remove any leading singleton batch dim so PIL
-            # later sees a plain (H, W, 3) array.
-            img_np = img_tensor.squeeze().cpu().numpy()
-            res_np = res_tensor.squeeze().cpu().numpy()
 
-            blended_np = np.clip(img_np + res_np * strength, 0.0, 1.0)
-            # Convert to 0-255 uint8 so downstream Save-Image & comparer nodes
-            # don’t need to rescale.
-            blended_uint8 = (blended_np * 255.0).astype(np.uint8)
-            blended_out.append(np.squeeze(blended_uint8))
+        for img_t, res_t in zip(image_list, residual_list):
+            # Ensure on same device (fallback to img_t's device)
+            res_t = res_t.to(img_t.device)
+
+            # Both tensors may include an extra leading batch/channel dimension; squeeze safely
+            img = img_t.squeeze().clamp(0,1)
+            res = res_t.squeeze()
+
+            blended = (img + res * strength).clamp(0,1)
+
+            # Restore missing channel dimension if blend lost it (should stay (C,H,W))
+            if blended.ndim == 2:
+                blended = blended.unsqueeze(0)
+
+            blended_frames.append(blended.unsqueeze(0))  # keep batch dim so we can cat
             prefixes.append(f"SPCA_{strength:.2f}_")
 
-        # Flatten arbitrarily nested lists/tuples
-        def _flatten(seq):
-            for elem in seq:
-                if isinstance(elem, (list, tuple)):
-                    yield from _flatten(elem)
-                else:
-                    yield elem
+        # Concatenate into a single batch tensor (N,C,H,W)
+        batch_tensor = torch.cat(blended_frames, dim=0)
 
-        flat_imgs: list[np.ndarray] = list(_flatten(blended_out))
-
-        # Ensure each image is numpy array (H, W, 3)
-        clean_imgs: list[np.ndarray] = []
-        for a in flat_imgs:
-            arr = np.asarray(a)
-            arr = np.squeeze(arr)
-            if arr.ndim == 2:
-                arr = np.stack([arr]*3, axis=-1)
-            while arr.ndim > 3:
-                arr = np.squeeze(arr)
-            if arr.dtype != np.uint8:
-                arr = arr.astype(np.uint8)
-            clean_imgs.append(arr)
-
-        # Convert numpy images → torch tensors expected by ComfyUI
-        tensors = [pil2tensor(Image.fromarray(img)) for img in clean_imgs]
-        batch_tensor = torch.cat(tensors, dim=0) if len(tensors) > 1 else tensors[0]
-
-        # Provide a single filename_prefix string.
         joined_prefix = "".join(prefixes)
 
         return (batch_tensor, joined_prefix)

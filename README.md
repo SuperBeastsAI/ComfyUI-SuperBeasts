@@ -1,80 +1,50 @@
-# SuperBeasts.AI Nodes & Custom Models
-
-This repository contains custom nodes for ComfyUI created and used by SuperBeasts.AI (@SuperBeasts.AI on Instagram)
-
-## Updates
-- 19/07/25: Super Pop Colour Adjustment model and node release
-- 31/07/24: Resolved bugs with dynamic input thanks to @Amorano. Add Github Action for Publishing to Comfy Registry thanks to @haohaocreates
-- 30/07/24: Moved Deflicker & PixelDeflicker to Experimental labels (this will require readding them in your WF but I wanted this to be clearer)
-- 30/04/24: 
-- - Updated readme with documentation
-- - Added Deflicker and PixelDeflicker nodes for reducing flickering artifacts in image sequences. 
-- - Introduced CrossFadeImageBatches node for smooth cross-fade transitions between image batches
-- - Enhanced ImageBatchManagement and MaskBatchManagement nodes with resizing, cropping, and reordering capabilities
-- 27/03/24: Released and also pushed an update to resolve batched images for videos etc
-
----
-# Super Pop Color Adjustment (SuperBeasts.AI)
-
-![SPCA-Header](examples/SPCA-Header.webp)
+# SuperBeasts.AI – Custom ComfyUI Nodes & Models
 
 
-
+## 🆕 Recent Updates
+- **19/07/2025** – *Super Pop Color Adjustment* model + node released.
 ---
 
-# Image Effects
+# 🔥Super Pop Color Adjustment Model & Nodes
 
-## HDR Effects (SuperBeasts.AI)
+<p align="center">
+  <img src="docs/assets/examples/SPCA-Header.webp" alt="Super Pop Color Adjustment" width="100%" />
+</p>
 
-The HDR Effects is an image processing application that enhances the dynamic range and visual appeal of input images. It provides a set of adjustable parameters to fine-tune the HDR effect according to user preferences.
+**Super Pop Color Adjustment** · *A fast residual color adjustment model for vibrant palettes, deep blacks, crisp highlights, HDR bite – in one shot.*
 
-### Features
+New Nodes, new model and workflow provided.
 
-- Adjusts the intensity of shadows, highlights, and overall HDR effect
-- Applies gamma correction to control the overall brightness and contrast
-- Enhances contrast and color saturation for more vibrant results
-- Preserves color accuracy by processing the image in the LAB color space
-- Utilizes luminance-based masks for targeted adjustments
-- Blends the adjusted luminance with the original luminance for a balanced effect
+<a href="/docs/super-pop-color-adjustment.md"><table width="100%" cellpadding="0" cellspacing="0" style="background:#000048;">
+  <tr>
+    <td align="center" style="padding:12px 0;">
+      <span style="color:#fff; font-weight:bold; font-size:1.1em;">Learn more about Super Pop Color Adjustment</span>
+    </td>
+  </tr>
+</table></a>
 
-## Examples
+## 📚 Documentation Index
+<table><tr><td valign="top" width="50%">
 
-![Example 1](examples/ex1.png)
+### Core
+- [Super Pop Color Adjustment](docs/super-pop-color-adjustment.md)
+- [HDR Effects](docs/hdr-effects.md)
+- [Batch Management (Images & Masks)](docs/batch-management.md)
+- [Context & Workflow Tips](docs/context-and-workflow.md)
 
+</td><td valign="top" width="50%">
 
-![Example 2](examples/ex2.png)
+### Reference
+- [Changelog](CHANGELOG.md)
+- [Deprecated / Removed Nodes](docs/deprecated.md)
 
+</td></tr></table>
 
-### Parameter details
-
-The application provides the following adjustable parameters:
-
-- `hdr_intensity` (default: 0.5, range: 0.0 to 5.0, step: 0.01):
-  - Controls the overall intensity of the HDR effect
-  - Higher values result in a more pronounced HDR effect
-
-- `shadow_intensity` (default: 0.25, range: 0.0 to 1.0, step: 0.01):
-  - Adjusts the intensity of shadows in the image
-  - Higher values darken the shadows and increase contrast
-
-- `highlight_intensity` (default: 0.75, range: 0.0 to 1.0, step: 0.01):
-  - Adjusts the intensity of highlights in the image
-  - Higher values brighten the highlights and increase contrast
-
-- `gamma_intensity` (default: 0.25, range: 0.0 to 1.0, step: 0.01):
-  - Controls the gamma correction applied to the image
-  - Higher values increase the overall brightness and contrast
-
-- `contrast` (default: 0.1, range: 0.0 to 1.0, step: 0.01):
-  - Enhances the contrast of the image
-  - Higher values result in more pronounced contrast
-
-- `enhance_color` (default: 0.25, range: 0.0 to 1.0, step: 0.01):
-  - Enhances the color saturation of the image
-  - Higher values result in more vibrant colors
- 
----
-
-# Deprecated / Removed
+## ⭐ Support / Community
+Follow **[@SuperBeasts.AI](https://www.instagram.com/SuperBeasts.AI)**. 
+Feedback / edge cases: open an Issue.
 
 
+## 🔒 Model & License Snapshot
+###Super Color Pop Adjustment Model
+Weights: *SPCA-Community-NoSaaS* (local & client use OK, no public SaaS redistribution). Full terms & source: [license-models.md](docs/license-models.md).

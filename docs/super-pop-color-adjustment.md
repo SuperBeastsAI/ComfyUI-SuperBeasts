@@ -1,11 +1,15 @@
+# Super Pop Color Adjustment (SuperBeasts.AI)
 
-Bring the **SuperBeasts “pop”** to any image in one click. Months of solo R&D, hundreds of hand‑tuned colour‑grade assets/examples, and a custom residual color correction model trained to push **vibrant palette, deep blacks, crisp highlights, and HDR bite** with ease.
+Bring the **SuperBeasts “pop”** to any image in one click using a new custom residual color correction model trained to push **vibrant palette, deep blacks, crisp highlights, and HDR bite** with ease.
+
+<a href="assets/examples/SPCA/SuperBeasts.AI-SuperPopColorAdjustment.json" target="_blank"><img src="assets/examples/SPCA/workflow.jpg"/></a>
+<a href="assets/examples/SPCA/SuperBeasts.AI-SuperPopColorAdjustment.json" target="_blank">Downlaod the ComfyUI Workflow</a>.
 
 ### Why I built it
 Everything I post gets graded: lift blacks, pull whites, bend curves, punch colour. Existing auto tools (and many AI outputs — looking at you, muddy yellow “whites”) just weren’t landing, especially across batches or iterative generations. Training my own lightweight correction model let me reclaim hours of post and lock in a consistent SuperBeasts look I could reuse — and share.
 
 **Personal project, shared as‑is.**  
-Works great across my SuperBeasts production flow and a wide mix of test art, but it’s *not* exhaustively validated on every style, lighting condition, or colour space. Expect edge cases, occasional overcorrection, and behaviour that varies with resolution/patch overlap. Please experiment and let me know what you think!
+Works great generally across my SuperBeasts production flow and a wide mix of test art, but it’s *not* exhaustively validated on every style, lighting condition, or colour space. Expect edge cases, occasional under or overcorrection, and behaviour that varies with resolution/patch overlap. But by and large it's still a huge timer saver in my opinion so please experiment and let me know what you think.
 
 If you want to show support please take a momenet to follow me on Instagram <a href="https://www.instagram.com/SuperBeasts.AI" target="_blank">@SuperBeasts.AI</a>
 
@@ -31,7 +35,9 @@ If you prefer manual download, grab them from the GitHub release page:
 and drop the `.onnx` file into `custom_nodes/ComfyUI-SuperBeasts/models/`.
 
 **License:**
-Weights are SPCA-Community-NoSaaS. Local/client use OK; no public SaaS redistribution. <a href="https://github.com/SuperBeastsAI/SuperBeastsAI-Models/blob/main/SuperPopColorAdjustment/LICENSE.txt" target="_blank">See model repo</a>.
+Weights are SPCA-Community-NoSaaS. 
+Local/client use OK; no public SaaS redistribution.
+<a href="https://github.com/SuperBeastsAI/SuperBeastsAI-Models/blob/main/SuperPopColorAdjustment/LICENSE.txt" target="_blank">See licence in the model repo</a>.
 
 
 <h2>Same settings multiple corrections (Stength: 1.0)</h2>
@@ -46,10 +52,10 @@ Weights are SPCA-Community-NoSaaS. Local/client use OK; no public SaaS redistrib
     <td style="width:25%" width="25%">S.P.C.A</td>
   </tr>
   <tr>
-    <td><img src="assets/examples/SPCA/1a.png" width="100%" alt="Original 1"></td>
-    <td><img src="assets/examples/SPCA/1b.png" width="100%" alt="S.P.C.A 1"></td>
-    <td><img src="assets/examples/SPCA/5a.png" width="100%" alt="Original 2"></td>
-    <td><img src="assets/examples/SPCA/5b.png" width="100%" alt="S.P.C.A 2"></td>
+    <td><img src="assets/examples/SPCA/5a.png" width="100%" alt="Original 1"></td>
+    <td><img src="assets/examples/SPCA/5b.png" width="100%" alt="S.P.C.A 1"></td>
+    <td><img src="assets/examples/SPCA/1a.png" width="100%" alt="Original 2"></td>
+    <td><img src="assets/examples/SPCA/1b.png" width="100%" alt="S.P.C.A 2"></td>
   </tr>
   <tr>
     <td><img src="assets/examples/SPCA/2a.png" width="100%" alt="Original 3"></td>
@@ -147,8 +153,8 @@ Weights are SPCA-Community-NoSaaS. Local/client use OK; no public SaaS redistrib
     <td><img src="assets/examples/SPCA/21b.png" width="100%" alt="S.P.C.A 2"></td>
   </tr>
   <tr>
-    <td><img src="assets/examples/SPCA/32a.png" width="100%" alt="Original 3"></td>
-    <td><img src="assets/examples/SPCA/32b.png" width="100%" alt="S.P.C.A 3"></td>
+    <td><img src="assets/examples/SPCA/35a.png" width="100%" alt="Original 3"></td>
+    <td><img src="assets/examples/SPCA/35b.png" width="100%" alt="S.P.C.A 3"></td>
     <td><img src="assets/examples/SPCA/28a.png" width="100%" alt="Original 4"></td>
     <td><img src="assets/examples/SPCA/28b.png" width="100%" alt="S.P.C.A 4"></td>
   </tr>
@@ -211,14 +217,6 @@ Weights are SPCA-Community-NoSaaS. Local/client use OK; no public SaaS redistrib
 * **Very high strengths:** Values above 2.0 can clip highlights or oversaturate; use sparingly
   for stylised effects.
 
-### Creative workflow ideas
-
-1. **HDR Sandwich** – Run Super Pop, then feed the output into **HDR Effects** (with gentle
-   settings) to amplify micro-contrast.
-3. **Colour remap** – Plug a palette or reference frame into the *Context* input to nudge the
-   final toning toward that colour space.
-4. **Video** – Yes it works quite well across video frames! Try experiement with *Initial context for batch* to subtely lock colour across all the processed frames or leave as is for each frame to determine the correction independantly.
-
 ### Understanding the *Context* input
 
 The context socket takes a **64 × 64** image that acts as a colour-map reference while the
@@ -235,6 +233,15 @@ a sunset or neon sign) for experimental colour correction shifts.
 
 Remember: the context influences *global* colour balance, not fine detail, so even heavily
 down-scaled or abstract images work great but this only plays a small role in the final correction - ultimatley the actual 512x512px patch being corrected has the greated weight in the adjustment task. 
+
+
+### Creative workflow ideas
+
+1. **HDR Sandwich** – Run Super Pop, then feed the output into **HDR Effects** (with gentle
+   settings) to amplify micro-contrast.
+2. **Colour remap** – Plug a palette or reference frame into the *Context* input to nudge the
+   final toning into what would essentially be a correction for that provided colour space.
+3. **Video** – It works quite well across video frames! You could try experiement with *Initial context for batch* to subtely lock colour correction guidance across all the processed frames or leave as is for each frame to determine the correction independantly.
 
 ### System Requirements
 
