@@ -1,0 +1,9 @@
+# Stub licence notice
+
+This repo’s code is MIT licensed. Some nodes (e.g. Super Pop Color Adjustment) download 
+model weights that are NOT MIT and are covered by the SPCA‑Community‑NoSaaS license. 
+By using a node that downloads those weights you accept those terms. See the model license in the model repo.
+You can find the full licence text in the model repository:
+https://github.com/SuperBeastsAI/SuperBeastsAI-Models/blob/main/SuperPopColorAdjustment/LICENSE.txt
+
+If you plan to use the weights, you must agree to the terms at the link above. 
