@@ -17,7 +17,7 @@ New Nodes, new model and workflow provided here or update ComfyUI SuperBeasts.AI
 
 <a href="/docs/super-pop-color-adjustment.md">Learn more about Super Pop Color Adjustment</a>
 
-## 📚 Documentation Index
+## 📚 Documentation
 <table><tr><td valign="top" width="50%">
 
 ### Core
