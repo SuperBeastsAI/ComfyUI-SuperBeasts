@@ -1,7 +1,7 @@
 [project]
 name = "comfyui-superbeasts"
 description = "Custom nodes by SuperBeasts.AI including Super Pop Color Adjustment, HDR Effects and Image/Mask batching tools and more. (@SuperBeasts.AI on Instagram)"
-version = "1.2.1"
+version = "1.2.2"
 # Use file-based license reference to avoid multi-line strings inside inline tables (which TOML disallows)
 license = { file = "LICENSE" }
 

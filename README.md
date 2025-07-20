@@ -38,8 +38,3 @@ New Nodes, new model and workflow provided here or update ComfyUI SuperBeasts.AI
 ## ⭐ Support / Community
 Follow **[@SuperBeasts.AI](https://www.instagram.com/SuperBeasts.AI)**. 
 Feedback / edge cases: open an Issue.
-
-
-## 🔒 Model & License Snapshot
-###Super Color Pop Adjustment Model
-Weights: *SPCA-Community-NoSaaS* (local & client use OK, no public SaaS redistribution). Full terms & source: [license-models.md](docs/license-models.md).
