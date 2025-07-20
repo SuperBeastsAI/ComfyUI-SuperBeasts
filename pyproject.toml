@@ -1,7 +1,7 @@
 [project]
 name = "comfyui-superbeasts"
 description = "This repository contains custom nodes for ComfyUI created and used by SuperBeasts.AI (@SuperBeasts.AI on Instagram)"
-version = "1.0.1"
+version = "1.1"
 license = """
 MIT License
 

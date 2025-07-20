@@ -982,10 +982,11 @@ class SuperPopColorAdjustment:
         }
 
     # primary output: processed image batch
-    # secondary output: one metadata dict per output image so Save Image can
-    # embed the strength value automatically via its *extra_pnginfo* socket.
-    RETURN_TYPES = ("IMAGE", "STRING")
-    RETURN_NAMES = ("images", "metadata")
+    # secondary output: per-frame filename prefix strings for Save Image
+    # third output: raw residual tensors (type SPCA_RESIDUAL) so that a
+    # dedicated blend node can re-apply any arbitrary strength later on.
+    RETURN_TYPES = ("IMAGE", "STRING", "SPCA_RESIDUAL")
+    RETURN_NAMES = ("images", "filename_prefix", "residuals")
     FUNCTION = "apply_adjustment"
     CATEGORY = "SuperBeastsAI/Image"
 
@@ -1125,9 +1126,8 @@ class SuperPopColorAdjustment:
                          initial_context_for_batch=False, context=None):
         # Ensure *image* is a batch tensor – iterate over each frame
         output_tensors: list[torch.Tensor] = []
-        # collect a per-image prefix so downstream Save Image nodes can be
-        # automatically mapped over lists (one prefix per image).
         filename_prefixes: list[str] = []
+        residual_tensors: list[torch.Tensor] = []
 
         # Cache for the first computed context thumbnail when reusing across batch
         ctx_np_cached = None
@@ -1266,17 +1266,122 @@ class SuperPopColorAdjustment:
             for s in strengths:
                 blended_np = np.clip(orig_np_full + residual_full * s, 0.0, 1.0)
                 blended_pil = Image.fromarray((blended_np * 255.0).astype(np.uint8))
+
+                # Convert blended PIL → tensor and append to batch list
                 output_tensors.append(pil2tensor(blended_pil))
+
+                # Build filename prefix string per‐image (we will join later)
                 filename_prefixes.append(f"SPCA_{s:.2f}_")
+
+                # Store residual for this output so downstream nodes can re-blend
+                residual_tensor = torch.from_numpy(residual_full).unsqueeze(0).float()
+                residual_tensors.append(residual_tensor)
             # Update progress bar
             if pbar is not None:
                 pbar.update_absolute(idx + 1)
 
-        if not output_tensors:
-            # fallback: no adjustment produced – keep original first frame
-            output_tensors = [image]
+        # ------------------------------------------------------------------
+        # Finalise outputs – convert accumulated lists to batched tensors and
+        # join filename prefixes into a single string (Save Image expects str)
+        # ------------------------------------------------------------------
 
-        return (output_tensors, filename_prefixes)
+        if not output_tensors:
+            # Fallback – no processing happened; return originals and zero residual.
+            images_batch = image
+            residual_batch = [torch.zeros_like(image)]
+            filename_prefix_str = ""
+        else:
+            images_batch = torch.cat(output_tensors, dim=0)
+            residual_batch = residual_tensors  # keep list per-frame
+            filename_prefix_str = "".join(filename_prefixes)
+
+        return (images_batch, filename_prefix_str, residual_batch)
+
+class SuperPopResidualBlend:
+    """Interactively re-apply a residual predicted by **Super Pop Color Adjustment** at any arbitrary strength.
+
+    Inputs
+    ------
+    image      : original image batch to adjust
+    residual   : batch of residual tensors output from SuperPopColorAdjustment
+    strength   : scalar multiplier (e.g. 0.0-2.0) applied to the residual
+    """
+
+    DESCRIPTION = __doc__
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "image": ("IMAGE", ),
+                "residual": ("SPCA_RESIDUAL", ),
+                "strength": ("FLOAT", {"default": 1.0, "min": -100.0, "max": 100.0, "step": 0.01}),
+            }
+        }
+
+    RETURN_TYPES = ("IMAGE", "STRING")
+    RETURN_NAMES = ("images", "filename_prefix")
+    FUNCTION = "blend"
+    CATEGORY = "SuperBeastsAI/Image"
+
+    def blend(self, image, residual, strength=1.0):
+        """Apply *residual × strength* to *image* per-frame."""
+        # Ensure each input is a list-like batch for easy zip processing.
+        if not isinstance(image, (list, tuple)):
+            image = [image]
+        if not isinstance(residual, (list, tuple)):
+            residual = [residual]
+
+        if len(residual) != len(image):
+            # Simple broadcast: repeat the first residual for all images if counts mismatch
+            residual = residual * len(image)
+
+        blended_out: list[np.ndarray] = []
+        prefixes: list[str] = []
+        for img_tensor, res_tensor in zip(image, residual):
+            # Tensors → numpy, remove any leading singleton batch dim so PIL
+            # later sees a plain (H, W, 3) array.
+            img_np = img_tensor.squeeze().cpu().numpy()
+            res_np = res_tensor.squeeze().cpu().numpy()
+
+            blended_np = np.clip(img_np + res_np * strength, 0.0, 1.0)
+            # Convert to 0-255 uint8 so downstream Save-Image & comparer nodes
+            # don’t need to rescale.
+            blended_uint8 = (blended_np * 255.0).astype(np.uint8)
+            blended_out.append(np.squeeze(blended_uint8))
+            prefixes.append(f"SPCA_{strength:.2f}_")
+
+        # Flatten arbitrarily nested lists/tuples
+        def _flatten(seq):
+            for elem in seq:
+                if isinstance(elem, (list, tuple)):
+                    yield from _flatten(elem)
+                else:
+                    yield elem
+
+        flat_imgs: list[np.ndarray] = list(_flatten(blended_out))
+
+        # Ensure each image is numpy array (H, W, 3)
+        clean_imgs: list[np.ndarray] = []
+        for a in flat_imgs:
+            arr = np.asarray(a)
+            arr = np.squeeze(arr)
+            if arr.ndim == 2:
+                arr = np.stack([arr]*3, axis=-1)
+            while arr.ndim > 3:
+                arr = np.squeeze(arr)
+            if arr.dtype != np.uint8:
+                arr = arr.astype(np.uint8)
+            clean_imgs.append(arr)
+
+        # Convert numpy images → torch tensors expected by ComfyUI
+        tensors = [pil2tensor(Image.fromarray(img)) for img in clean_imgs]
+        batch_tensor = torch.cat(tensors, dim=0) if len(tensors) > 1 else tensors[0]
+
+        # Provide a single filename_prefix string.
+        joined_prefix = "".join(prefixes)
+
+        return (batch_tensor, joined_prefix)
 
 NODE_CLASS_MAPPINGS = {
     'HDR Effects (SuperBeasts.AI)': HDREffects,
@@ -1290,6 +1395,7 @@ NODE_CLASS_MAPPINGS = {
     'Super Color Adjustment (SuperBeasts.AI)': SuperPopColorAdjustment,
     'Super Pop Color Adjustment (SuperBeasts.AI)': SuperPopColorAdjustment,
     'SB Load Model (SuperBeasts.AI)': SBLoadModel,
+    'Super Pop Residual Blend (SuperBeasts.AI)': SuperPopResidualBlend,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -1302,4 +1408,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     'PixelDeflicker': 'Pixel Deflicker - Experimental (SuperBeasts.AI)',
     'SuperPopColorAdjustment': 'Super Pop Color Adjustment (SuperBeasts.AI)',
     'SBLoadModel': 'SB Load Model (SuperBeasts.AI)',
+    'SuperPopResidualBlend': 'Super Pop Residual Blend (SuperBeasts.AI)',
 }

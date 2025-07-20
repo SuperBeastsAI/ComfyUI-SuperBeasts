@@ -1,0 +1,1274 @@
+{
+  "id": "f616e3a0-cf66-4f06-9787-fd37ac226747",
+  "revision": 0,
+  "last_node_id": 133,
+  "last_link_id": 305,
+  "nodes": [
+    {
+      "id": 90,
+      "type": "VHS_VideoCombine",
+      "pos": [
+        -90,
+        310
+      ],
+      "size": [
+        490,
+        1051.625732421875
+      ],
+      "flags": {},
+      "order": 14,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 213
+        },
+        {
+          "name": "audio",
+          "shape": 7,
+          "type": "AUDIO",
+          "link": null
+        },
+        {
+          "name": "meta_batch",
+          "shape": 7,
+          "type": "VHS_BatchManager",
+          "link": null
+        },
+        {
+          "name": "vae",
+          "shape": 7,
+          "type": "VAE",
+          "link": null
+        },
+        {
+          "name": "frame_rate",
+          "type": "FLOAT",
+          "widget": {
+            "name": "frame_rate"
+          },
+          "link": 211
+        }
+      ],
+      "outputs": [
+        {
+          "name": "Filenames",
+          "type": "VHS_FILENAMES",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-videohelpersuite",
+        "ver": "a7ce59e381934733bfae03b1be029756d6ce936d",
+        "Node name for S&R": "VHS_VideoCombine",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": {
+        "frame_rate": 8,
+        "loop_count": 0,
+        "filename_prefix": "SPCA_",
+        "format": "video/h264-mp4",
+        "pix_fmt": "yuv420p",
+        "crf": 19,
+        "save_metadata": true,
+        "trim_to_audio": false,
+        "pingpong": false,
+        "save_output": true,
+        "videopreview": {
+          "hidden": false,
+          "paused": false,
+          "params": {
+            "filename": "SPCA__00001.mp4",
+            "subfolder": "",
+            "type": "output",
+            "format": "video/h264-mp4",
+            "frame_rate": 59.94005994005993,
+            "workflow": "SPCA__00001.png",
+            "fullpath": "D:\\Dev\\AI\\ComfyUI\\output\\SPCA__00001.mp4"
+          }
+        }
+      }
+    },
+    {
+      "id": 85,
+      "type": "VHS_VideoInfo",
+      "pos": [
+        440,
+        1140
+      ],
+      "size": [
+        262,
+        206
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "video_info",
+          "type": "VHS_VIDEOINFO",
+          "link": 194
+        }
+      ],
+      "outputs": [
+        {
+          "name": "source_fps🟨",
+          "type": "FLOAT",
+          "links": []
+        },
+        {
+          "name": "source_frame_count🟨",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "source_duration🟨",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "source_width🟨",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "source_height🟨",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "loaded_fps🟦",
+          "type": "FLOAT",
+          "links": [
+            211
+          ]
+        },
+        {
+          "name": "loaded_frame_count🟦",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "loaded_duration🟦",
+          "type": "FLOAT",
+          "links": null
+        },
+        {
+          "name": "loaded_width🟦",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "loaded_height🟦",
+          "type": "INT",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-videohelpersuite",
+        "ver": "a7ce59e381934733bfae03b1be029756d6ce936d",
+        "Node name for S&R": "VHS_VideoInfo",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": {}
+    },
+    {
+      "id": 102,
+      "type": "SB Load Model (SuperBeasts.AI)",
+      "pos": [
+        -630,
+        -80
+      ],
+      "size": [
+        390,
+        82
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "SBMODEL",
+          "links": [
+            273
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-superbeasts",
+        "ver": "73a6a22138b32cd76318a48c594050b91906901d",
+        "Node name for S&R": "SB Load Model (SuperBeasts.AI)",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "SuperPopColorAdjustment/latest",
+        "AUTO"
+      ],
+      "color": "#14145c",
+      "bgcolor": "#000048"
+    },
+    {
+      "id": 91,
+      "type": "HDR Effects (SuperBeasts.AI)",
+      "pos": [
+        -630,
+        320
+      ],
+      "size": [
+        390,
+        180
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 4,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 275
+        }
+      ],
+      "outputs": [
+        {
+          "name": "result_img",
+          "type": "IMAGE",
+          "slot_index": 0,
+          "links": [
+            213,
+            238
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-superbeasts",
+        "ver": "f684c86d0031b82123dc1f7931a8de43c9946fee",
+        "Node name for S&R": "HDR Effects (SuperBeasts.AI)",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        0.76,
+        0.25,
+        0.9,
+        0,
+        0.1,
+        0.6400000000000001
+      ],
+      "color": "#14145c",
+      "bgcolor": "#000048"
+    },
+    {
+      "id": 113,
+      "type": "Note",
+      "pos": [
+        -630,
+        -460
+      ],
+      "size": [
+        390,
+        150
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Super Pop Color Adjustment Recommendations",
+      "properties": {
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "- Image(s) 512 - 2048px\n- Context Image - Empty uses it's self for correction context\n- Max strength 1.0\n- Count 1\n- Overlap at least 0.3 (higher is better up to ~0.9 if GPU allows for final images)\n\nExamples and instructions: https://github.com/SuperBeastsAI/ComfyUI-SuperBeasts/blob/master/docs/super-pop-color-adjustment.md"
+      ],
+      "color": "#d67023",
+      "bgcolor": "#c25c0f"
+    },
+    {
+      "id": 112,
+      "type": "Note",
+      "pos": [
+        -1090,
+        600
+      ],
+      "size": [
+        280,
+        100
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Video SPCA Correction",
+      "properties": {
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "Suggest testing with Frame load cap 1 to determine max strength and overlap before doing a full run. \n"
+      ],
+      "color": "#d67023",
+      "bgcolor": "#c25c0f"
+    },
+    {
+      "id": 120,
+      "type": "Super Pop Color Adjustment (SuperBeasts.AI)",
+      "pos": [
+        -620,
+        70
+      ],
+      "size": [
+        387.8160095214844,
+        170
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "SBMODEL",
+          "link": 273
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 274
+        },
+        {
+          "name": "context",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            275,
+            284
+          ]
+        },
+        {
+          "name": "filename_prefix",
+          "type": "STRING",
+          "links": [
+            285
+          ]
+        },
+        {
+          "name": "residuals",
+          "type": "SPCA_RESIDUAL",
+          "links": [
+            288,
+            289
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-superbeasts",
+        "ver": "117a4529ab5f0ec0145da3e50d61ef73046fa821",
+        "Node name for S&R": "Super Pop Color Adjustment (SuperBeasts.AI)",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        1,
+        1,
+        0.5,
+        false
+      ],
+      "color": "#14145c",
+      "bgcolor": "#000048"
+    },
+    {
+      "id": 121,
+      "type": "Super Pop Residual Blend (SuperBeasts.AI)",
+      "pos": [
+        920,
+        160
+      ],
+      "size": [
+        374.6089782714844,
+        78
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 282
+        },
+        {
+          "name": "residual",
+          "type": "SPCA_RESIDUAL",
+          "link": 288
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            297
+          ]
+        },
+        {
+          "name": "filename_prefix",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-superbeasts",
+        "ver": "117a4529ab5f0ec0145da3e50d61ef73046fa821",
+        "Node name for S&R": "Super Pop Residual Blend (SuperBeasts.AI)",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        0.5000000000000001
+      ],
+      "color": "#14145c",
+      "bgcolor": "#000048"
+    },
+    {
+      "id": 126,
+      "type": "Image Comparer (rgthree)",
+      "pos": [
+        1630,
+        -800
+      ],
+      "size": [
+        670,
+        900
+      ],
+      "flags": {},
+      "order": 17,
+      "mode": 0,
+      "inputs": [
+        {
+          "dir": 3,
+          "name": "image_a",
+          "type": "IMAGE",
+          "link": 296
+        },
+        {
+          "dir": 3,
+          "name": "image_b",
+          "type": "IMAGE",
+          "link": 299
+        }
+      ],
+      "outputs": [],
+      "title": "Comparison - Original V.S. Super Pop Colour Adjustment (SuberBeasts.AI)",
+      "properties": {
+        "cnr_id": "rgthree-comfy",
+        "ver": "944d5353a1b0a668f40844018c3dc956b95a67d7",
+        "comparer_mode": "Slide",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        [
+          {
+            "name": "A",
+            "selected": true,
+            "url": "/api/view?filename=rgthree.compare._temp_xehab_00021_.png&type=temp&subfolder=&preview=webp&rand=0.14605278819742062"
+          },
+          {
+            "name": "B",
+            "selected": true,
+            "url": "/api/view?filename=rgthree.compare._temp_xehab_00022_.png&type=temp&subfolder=&preview=webp&rand=0.701516254150749"
+          }
+        ]
+      ],
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 125,
+      "type": "Image Comparer (rgthree)",
+      "pos": [
+        920,
+        -800
+      ],
+      "size": [
+        670,
+        900
+      ],
+      "flags": {},
+      "order": 16,
+      "mode": 0,
+      "inputs": [
+        {
+          "dir": 3,
+          "name": "image_a",
+          "type": "IMAGE",
+          "link": 297
+        },
+        {
+          "dir": 3,
+          "name": "image_b",
+          "type": "IMAGE",
+          "link": 298
+        }
+      ],
+      "outputs": [],
+      "title": "Comparison - Original V.S. Super Pop Colour Adjustment (SuberBeasts.AI)",
+      "properties": {
+        "cnr_id": "rgthree-comfy",
+        "ver": "944d5353a1b0a668f40844018c3dc956b95a67d7",
+        "comparer_mode": "Slide",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        [
+          {
+            "name": "A",
+            "selected": true,
+            "url": "/api/view?filename=rgthree.compare._temp_xkpis_00021_.png&type=temp&subfolder=&preview=webp&rand=0.9742529590999613"
+          },
+          {
+            "name": "B",
+            "selected": true,
+            "url": "/api/view?filename=rgthree.compare._temp_xkpis_00022_.png&type=temp&subfolder=&preview=webp&rand=0.2907313869015127"
+          }
+        ]
+      ],
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 81,
+      "type": "JWImageResizeByLongerSide",
+      "pos": [
+        -630,
+        -240
+      ],
+      "size": [
+        390,
+        82
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 300
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "slot_index": 0,
+          "links": [
+            189,
+            274,
+            282,
+            283,
+            298,
+            299
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-various",
+        "ver": "5bd85aaf7616878471469c4ec7e11bbd0cef3bf2",
+        "Node name for S&R": "JWImageResizeByLongerSide",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        1024,
+        "bicubic"
+      ]
+    },
+    {
+      "id": 118,
+      "type": "Super Pop Residual Blend (SuperBeasts.AI)",
+      "pos": [
+        1630,
+        160
+      ],
+      "size": [
+        374.6089782714844,
+        78
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 283
+        },
+        {
+          "name": "residual",
+          "type": "SPCA_RESIDUAL",
+          "link": 289
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            296
+          ]
+        },
+        {
+          "name": "filename_prefix",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-superbeasts",
+        "ver": "117a4529ab5f0ec0145da3e50d61ef73046fa821",
+        "Node name for S&R": "Super Pop Residual Blend (SuperBeasts.AI)",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        1.5000000000000002
+      ],
+      "color": "#14145c",
+      "bgcolor": "#000048"
+    },
+    {
+      "id": 93,
+      "type": "LoadImage",
+      "pos": [
+        -1410,
+        -800
+      ],
+      "size": [
+        630,
+        1000
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "slot_index": 0,
+          "links": [
+            252
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.44",
+        "Node name for S&R": "LoadImage",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "ChatGPT Image Jul 11, 2025, 08_55_43 PM.png",
+        "image"
+      ]
+    },
+    {
+      "id": 114,
+      "type": "SaveImage",
+      "pos": [
+        -130,
+        -800
+      ],
+      "size": [
+        210,
+        282
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 284
+        },
+        {
+          "name": "filename_prefix",
+          "type": "STRING",
+          "widget": {
+            "name": "filename_prefix"
+          },
+          "link": 285
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-core",
+        "ver": "0.3.44",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "SuperBeasts.AI_SPCA_"
+      ]
+    },
+    {
+      "id": 69,
+      "type": "Image Comparer (rgthree)",
+      "pos": [
+        110,
+        -800
+      ],
+      "size": [
+        670,
+        900
+      ],
+      "flags": {},
+      "order": 15,
+      "mode": 0,
+      "inputs": [
+        {
+          "dir": 3,
+          "name": "image_a",
+          "type": "IMAGE",
+          "link": 238
+        },
+        {
+          "dir": 3,
+          "name": "image_b",
+          "type": "IMAGE",
+          "link": 189
+        }
+      ],
+      "outputs": [],
+      "title": "Comparison - Original V.S. Super Pop Colour Adjustment (SuberBeasts.AI)",
+      "properties": {
+        "cnr_id": "rgthree-comfy",
+        "ver": "944d5353a1b0a668f40844018c3dc956b95a67d7",
+        "comparer_mode": "Slide",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        [
+          {
+            "name": "A",
+            "selected": true,
+            "url": "/api/view?filename=rgthree.compare._temp_sqvxh_00075_.png&type=temp&subfolder=&preview=webp&rand=0.04255633503278211"
+          },
+          {
+            "name": "B",
+            "selected": true,
+            "url": "/api/view?filename=rgthree.compare._temp_sqvxh_00076_.png&type=temp&subfolder=&preview=webp&rand=0.7640283506412191"
+          }
+        ]
+      ],
+      "color": "#2a363b",
+      "bgcolor": "#3f5159"
+    },
+    {
+      "id": 82,
+      "type": "VHS_LoadVideo",
+      "pos": [
+        -1400,
+        610
+      ],
+      "size": [
+        250,
+        669.5111083984375
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "meta_batch",
+          "shape": 7,
+          "type": "VHS_BatchManager",
+          "link": null
+        },
+        {
+          "name": "vae",
+          "shape": 7,
+          "type": "VAE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            257
+          ]
+        },
+        {
+          "name": "frame_count",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": null
+        },
+        {
+          "name": "video_info",
+          "type": "VHS_VIDEOINFO",
+          "links": [
+            194
+          ]
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-videohelpersuite",
+        "ver": "a7ce59e381934733bfae03b1be029756d6ce936d",
+        "Node name for S&R": "VHS_LoadVideo",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": {
+        "video": "TEST2.mp4",
+        "force_rate": 0,
+        "custom_width": 0,
+        "custom_height": 0,
+        "frame_load_cap": 1,
+        "skip_first_frames": 0,
+        "select_every_nth": 1,
+        "format": "AnimateDiff",
+        "choose video to upload": "image",
+        "videopreview": {
+          "hidden": false,
+          "paused": false,
+          "params": {
+            "force_rate": 0,
+            "custom_width": 0,
+            "custom_height": 0,
+            "frame_load_cap": 1,
+            "skip_first_frames": 0,
+            "select_every_nth": 1,
+            "filename": "TEST2.mp4",
+            "type": "input",
+            "format": "video/mp4"
+          }
+        }
+      }
+    },
+    {
+      "id": 111,
+      "type": "ImpactSwitch",
+      "pos": [
+        -630,
+        -800
+      ],
+      "size": [
+        400,
+        170
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "input1",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 252
+        },
+        {
+          "name": "input2",
+          "type": "IMAGE",
+          "link": 256
+        },
+        {
+          "name": "input3",
+          "type": "IMAGE",
+          "link": 257
+        },
+        {
+          "name": "input4",
+          "type": "IMAGE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "label": "IMAGE",
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            300
+          ]
+        },
+        {
+          "name": "selected_label",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "name": "selected_index",
+          "type": "INT",
+          "links": []
+        }
+      ],
+      "title": "1 Load Image / 2 Images from Folder / 3 Video",
+      "properties": {
+        "cnr_id": "comfyui-impact-pack",
+        "ver": "b3a815b43d987022542715b351ce3c2c02c902db",
+        "Node name for S&R": "ImpactSwitch",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        2,
+        false
+      ]
+    },
+    {
+      "id": 101,
+      "type": "LoadImagesFromFolderKJ",
+      "pos": [
+        -1400,
+        260
+      ],
+      "size": [
+        600,
+        262
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "slot_index": 0,
+          "links": [
+            256
+          ]
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "links": null
+        },
+        {
+          "name": "count",
+          "type": "INT",
+          "links": null
+        },
+        {
+          "name": "image_path",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "cnr_id": "comfyui-kjnodes",
+        "ver": "0d909572e226a49cae540cfe436551e93836db20",
+        "Node name for S&R": "LoadImagesFromFolderKJ",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "",
+        1024,
+        1024,
+        "crop",
+        0,
+        0,
+        false
+      ]
+    }
+  ],
+  "links": [
+    [
+      189,
+      81,
+      0,
+      69,
+      1,
+      "IMAGE"
+    ],
+    [
+      194,
+      82,
+      3,
+      85,
+      0,
+      "VHS_VIDEOINFO"
+    ],
+    [
+      211,
+      85,
+      5,
+      90,
+      4,
+      "FLOAT"
+    ],
+    [
+      213,
+      91,
+      0,
+      90,
+      0,
+      "IMAGE"
+    ],
+    [
+      238,
+      91,
+      0,
+      69,
+      0,
+      "IMAGE"
+    ],
+    [
+      252,
+      93,
+      0,
+      111,
+      0,
+      "IMAGE"
+    ],
+    [
+      256,
+      101,
+      0,
+      111,
+      1,
+      "IMAGE"
+    ],
+    [
+      257,
+      82,
+      0,
+      111,
+      2,
+      "IMAGE"
+    ],
+    [
+      273,
+      102,
+      0,
+      120,
+      0,
+      "SBMODEL"
+    ],
+    [
+      274,
+      81,
+      0,
+      120,
+      1,
+      "IMAGE"
+    ],
+    [
+      275,
+      120,
+      0,
+      91,
+      0,
+      "IMAGE"
+    ],
+    [
+      282,
+      81,
+      0,
+      121,
+      0,
+      "IMAGE"
+    ],
+    [
+      283,
+      81,
+      0,
+      118,
+      0,
+      "IMAGE"
+    ],
+    [
+      284,
+      120,
+      0,
+      114,
+      0,
+      "IMAGE"
+    ],
+    [
+      285,
+      120,
+      1,
+      114,
+      1,
+      "STRING"
+    ],
+    [
+      288,
+      120,
+      2,
+      121,
+      1,
+      "SPCA_RESIDUAL"
+    ],
+    [
+      289,
+      120,
+      2,
+      118,
+      1,
+      "SPCA_RESIDUAL"
+    ],
+    [
+      296,
+      118,
+      0,
+      126,
+      0,
+      "IMAGE"
+    ],
+    [
+      297,
+      121,
+      0,
+      125,
+      0,
+      "IMAGE"
+    ],
+    [
+      298,
+      81,
+      0,
+      125,
+      1,
+      "IMAGE"
+    ],
+    [
+      299,
+      81,
+      0,
+      126,
+      1,
+      "IMAGE"
+    ],
+    [
+      300,
+      111,
+      0,
+      81,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "SuperBeasts.AI Adjustments",
+      "bounding": [
+        -670,
+        -560,
+        480,
+        1110
+      ],
+      "color": "#c25c0f",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 2,
+      "title": "Image results",
+      "bounding": [
+        -150,
+        -900,
+        990,
+        1040
+      ],
+      "color": "#a1309b",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 3,
+      "title": "Video Results",
+      "bounding": [
+        -150,
+        190,
+        890,
+        1210
+      ],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 4,
+      "title": "Image(s) Input",
+      "bounding": [
+        -1440,
+        -900,
+        720,
+        2280
+      ],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 5,
+      "title": "Source Selection",
+      "bounding": [
+        -670,
+        -900,
+        480,
+        310
+      ],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 6,
+      "title": "Alternative SPCA Strength Tests",
+      "bounding": [
+        880,
+        -890,
+        1460,
+        1170
+      ],
+      "color": "#a1309b",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.6830134553650715,
+      "offset": [
+        1516.8244674831192,
+        984.559722812573
+      ]
+    },
+    "frontendVersion": "1.23.4",
+    "groupNodes": {},
+    "ue_links": [],
+    "links_added_by_ue": [],
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true,
+    "node_versions": {
+      "comfy-core": "0.3.14",
+      "ComfyUI-KJNodes": "80977db1ea8472a7934de50f3c878aed405e8d73",
+      "ComfyUI-SuperBeasts": "73a6a22138b32cd76318a48c594050b91906901d",
+      "ComfyUI-VideoHelperSuite": "8629188458dc6cb832f871ece3bd273507e8a766",
+      "comfyui-various": "36454f91606bbff4fc36d90234981ca4a47e2695",
+      "rgthree-comfy": "5d771b8b56a343c24a26e8cea1f0c87c3d58102f"
+    }
+  },
+  "version": 0.4
+}
