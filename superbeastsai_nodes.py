@@ -1393,8 +1393,6 @@ NODE_CLASS_MAPPINGS = {
     'String List Manager (SuperBeasts.AI)': StringListManager,
     'Deflicker - Experimental (SuperBeasts.AI)': Deflicker,
     'Pixel Deflicker - Experimental (SuperBeasts.AI)': PixelDeflicker,
-    # Legacy key kept for compatibility – new branded name below
-    'Super Color Adjustment (SuperBeasts.AI)': SuperPopColorAdjustment,
     'Super Pop Color Adjustment (SuperBeasts.AI)': SuperPopColorAdjustment,
     'SB Load Model (SuperBeasts.AI)': SBLoadModel,
     'Super Pop Residual Blend (SuperBeasts.AI)': SuperPopResidualBlend,
