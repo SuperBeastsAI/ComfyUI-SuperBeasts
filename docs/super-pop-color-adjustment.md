@@ -27,8 +27,9 @@ Happy generating!!
 
 **Auto model weight download:**
 Weights are automatically downloaded the first time the **SB Load Model** node runs using a specific version or 'latest'.
+
 If you prefer manual download, grab them from the GitHub release page:
-`https://github.com/SuperBeastsAI/SuperBeastsAI-Models/tree/main/SuperPopColorAdjustment/`  
+<a href="https://github.com/SuperBeastsAI/SuperBeastsAI-Models/tree/main/SuperPopColorAdjustment/" target="_blank">https://github.com/SuperBeastsAI/SuperBeastsAI-Models/tree/main/SuperPopColorAdjustment/</a>
 and drop the `.onnx` file into `custom_nodes/ComfyUI-SuperBeasts/models/`.
 
 **License:**
