@@ -2,7 +2,7 @@
 
 
 ## 🆕 Recent Updates
-- **19/07/2025** – *Super Pop Color Adjustment* model + node released.
+- **20/07/2025** –  New ComfyUI node version 1.1 which now includes *Super Pop Color Adjustment* model + node released.
 ---
 
 # 🔥 Available now: Super Pop Color Adjustment Model & Nodes
