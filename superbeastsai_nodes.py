@@ -316,15 +316,35 @@ class SBLoadModel:
         os.makedirs(models_dir, exist_ok=True)
         model_path = os.path.join(models_dir, filename)
 
+        # --------------------------------------------------------------
+        # Prefer a local .safetensors file when the expected ONNX model
+        # is missing.  This allows users to convert the published ONNX
+        # weights to PyTorch+Safetensors locally (using e.g., onnx2pytorch)
+        # without having to edit the registry or node settings.
+        # --------------------------------------------------------------
         if not os.path.isfile(model_path):
-            rel_path = f"{family}/{version}/{filename}"
-            try:
-                _download_remote_model(rel_path, model_path)
-            except Exception as e:
-                raise FileNotFoundError(
-                    f"Model file not found locally and automatic download failed.\n"
-                    f"Attempted path: {rel_path}\n{e}"
-                )
+            base_name, orig_ext = os.path.splitext(filename)
+            alt_ext = '.safetensors' if orig_ext.lower() != '.safetensors' else '.onnx'
+            alt_filename = base_name + alt_ext
+            alt_path = os.path.join(models_dir, alt_filename)
+            if os.path.isfile(alt_path):
+                # Found an alternative local file – switch to it.
+                filename = alt_filename
+                model_path = alt_path
+            else:
+                # No local alternative – attempt remote download of the
+                # originally requested filename (usually the ONNX weights).
+                rel_path = f"{family}/{version}/{filename}"
+                try:
+                    _download_remote_model(rel_path, model_path)
+                except Exception as e:
+                    raise FileNotFoundError(
+                        f"Model file not found locally and automatic download failed.\n"
+                        f"Attempted path: {rel_path}\n{e}"
+                    )
+        else:
+            # File exists locally; nothing to do.
+            pass
 
         # --- Security: check SHA-256 digest (raises if mismatch) ---
         try:
@@ -337,14 +357,8 @@ class SBLoadModel:
         if model_path in self._model_cache:
             return (self._model_cache[model_path], )
 
-        global tf, keras  # ensure global vars updated
-        try:
-            import onnxruntime as ort  # type: ignore
-        except Exception as e:
-            raise RuntimeError(
-                "onnxruntime is required for SuperBeasts models. Install with:\n"
-                " pip install onnxruntime-gpu  # (or onnxruntime for CPU)\n\n" + str(e)
-            )
+        # We defer importing onnxruntime unless we end up loading an ONNX model
+        ort = None  # type: ignore[assignment]
 
         # Optionally set device context
         dev_ctx = None
@@ -356,7 +370,32 @@ class SBLoadModel:
         # Determine patch size from filename
         patch_size = self._parse_patch_size(filename)
 
-        if model_path.lower().endswith('.safetensors'):
+        # --------------------------------------------------------------
+        # 1. TorchScript checkpoint – no external architecture required
+        # --------------------------------------------------------------
+        if model_path.lower().endswith('.pt'):
+            import torch
+
+            device_str = 'cuda' if device == 'GPU' and torch.cuda.is_available() else 'cpu'
+
+            try:
+                model_pt = torch.jit.load(model_path, map_location=device_str)
+            except Exception as e:
+                raise RuntimeError(f"Failed to load TorchScript model: {e}")
+
+            model_pt.eval()
+
+            model_info = {
+                "model": model_pt,
+                "device": device_str,
+                "patch_size": patch_size,
+                "type": "torchscript",
+            }
+
+        # --------------------------------------------------------------
+        # 2. Safetensors + Python architecture (requires contextual_residual_unet_v4.py)
+        # --------------------------------------------------------------
+        elif model_path.lower().endswith('.safetensors'):
             import torch
             from safetensors.torch import load_file as safe_load
             import importlib.util, sys, pathlib
@@ -379,7 +418,11 @@ class SBLoadModel:
             ContextualResidualUNetV4Torch = module.ContextualResidualUNetV4Torch
 
             device_str = 'cuda' if device == 'GPU' and torch.cuda.is_available() else 'cpu'
-            model_pt = ContextualResidualUNetV4Torch()
+            # Attempt to locate the matching ONNX graph so the wrapper can rebuild
+            # the network topology deterministically.
+            base_no_ext = os.path.splitext(model_path)[0]
+            onnx_candidate = base_no_ext + '.onnx'
+            model_pt = ContextualResidualUNetV4Torch(onnx_candidate if os.path.isfile(onnx_candidate) else None)
             state = safe_load(model_path, device=device_str)
             model_pt.load_state_dict(state, strict=False)
             model_pt.eval().to(device_str)
@@ -390,8 +433,18 @@ class SBLoadModel:
                 "patch_size": patch_size,
                 "type": "torch",
             }
+
+        # Load ONNX with onnxruntime (import lazily so safetensors users don't need it)
         else:
-            # Load ONNX with onnxruntime
+            if ort is None:
+                try:
+                    import onnxruntime as ort  # type: ignore
+                except Exception as e:
+                    raise RuntimeError(
+                        "onnxruntime is required for SuperBeasts ONNX models. Install with:\n"
+                        " pip install onnxruntime-gpu  # (or onnxruntime for CPU)\n\n" + str(e)
+                    )
+
             providers: List[str]
             avail_prov = ort.get_available_providers()
             print(f"[SuperBeasts] ONNX Runtime providers available: {avail_prov}")
