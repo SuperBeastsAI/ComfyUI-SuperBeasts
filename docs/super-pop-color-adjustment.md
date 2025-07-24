@@ -244,5 +244,19 @@ down-scaled or abstract images work great but this only plays a small role in th
 
 ### System Requirements
 
-Works out-of-the-box on CPU via `onnxruntime`.  For **10×** speed improvement ensure ComfyUI can use the `CUDAExecutionProvider` by using onnxruntime-gpu with the hardware that allows this. 
-This node print out the currently available providers into the ComfyUI server logs if you need to check this. 
+Works out-of-the-box on CPU via `onnxruntime` but it is extremely slow.  For **10×** speed improvement ensure ComfyUI can use the `CUDAExecutionProvider` by installing `onnxruntime-gpu` into the ComfyUI environment. 
+
+This node currently prints out the available providers for onnxruntime into the ComfyUI server logs when you run the node. So if you are not seeing `CUDAExecutionProvider` it's likely the model is using CPU instead. 
+
+For reference I use:
+Python version: 3.12.1 
+pytorch version: 2.5.0+cu124
+NVIDIA GeForce RTX 4090 
+
+Results - Server Logs show: 
+[SuperBeasts] ONNX Runtime providers available: ['TensorrtExecutionProvider', 'CUDAExecutionProvider', 'CPUExecutionProvider']
+[SuperBeasts] Using ORT providers: ['CUDAExecutionProvider', 'CPUExecutionProvider']
+1024x1024px with 0.5 overlap = 1.63s
+2048x2048px with 0.5 overlap = 5.23s
+
+Note: I am aware the extra installation of `onnxruntime-gpu` isn't ideal and I'm attempting to convert the model into .safetensors to work within the ComfyUI Pytorch environment better with less issues accessing the GPU. 
