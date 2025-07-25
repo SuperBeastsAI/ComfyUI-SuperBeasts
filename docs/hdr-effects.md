@@ -13,10 +13,10 @@ The HDR Effects is an image processing application that enhances the dynamic ran
 
 ## Examples
 
-![Example 1](assets/examples/ex1.png)
+![Example 1](https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/examples/ex1.png)
 
 
-![Example 2](assets/examples/ex2.png)
+![Example 2](https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/examples/ex2.png)
 
 
 ### Parameter details

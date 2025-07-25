@@ -3,7 +3,7 @@
 Keep your image and masks sized, cropped and ordered how ever you like without having to recreate the masks or mess with connections. 
 Note the resizing capability doesn't provide any settings, we simply crop and resize to maximise the image size with your provided width/height. 
 
-![Batch Management](../examples/BatchManagers.jpg)
+![Batch Management](https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/examples/BatchManagers.jpg)
 
 
 ## ImageBatchManagement

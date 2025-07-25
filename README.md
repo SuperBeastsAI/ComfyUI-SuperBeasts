@@ -8,7 +8,7 @@
 # 🔥 Available now: Super Pop Color Adjustment Model & Nodes
 
 <p align="center">
-  <img src="docs/assets/examples/SPCA-Header.webp" alt="SuperBeasts.AI Super Pop Color Adjustment" width="100%" />
+  <img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/examples/SPCA-Header.webp" alt="SuperBeasts.AI Super Pop Color Adjustment" width="100%" />
 </p>
 
 **Super Pop Color Adjustment** · *A fast residual color adjustment model for vibrant palettes, deep blacks, crisp highlights, HDR bite – in one shot.*

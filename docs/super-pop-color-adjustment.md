@@ -1,9 +1,11 @@
+<img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/examples/SPCA-Header.webp">
+
 # Super Pop Color Adjustment (SuperBeasts.AI)
 
 Bring the **SuperBeasts “pop”** to any image in one click using a new custom residual color correction model trained to push **vibrant palette, deep blacks, crisp highlights, and HDR bite** with ease.
 
-<a href="assets/examples/SPCA/SuperBeasts.AI-SuperPopColorAdjustment.json" target="_blank"><img src="assets/examples/SPCA/workflow.jpg"/></a>
-<a href="assets/examples/SPCA/SuperBeasts.AI-SuperPopColorAdjustment.json" target="_blank">Downlaod the ComfyUI Workflow</a>.
+<a href="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/SuperBeasts.AI-SuperPopColorAdjustment.json" target="_blank"><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/workflow.jpg"/></a>
+<a href="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/SuperBeasts.AI-SuperPopColorAdjustment.json" target="_blank">Download the ComfyUI Workflow</a>.
 
 ### Why I built it
 Everything I post gets graded: lift blacks, pull whites, bend curves, punch colour. Existing auto tools (and many AI outputs — looking at you, muddy yellow “whites”) just weren’t landing, especially across batches or iterative generations. Training my own lightweight correction model let me reclaim hours of post and lock in a consistent SuperBeasts look I could reuse — and share.
@@ -18,6 +20,8 @@ Happy generating!!
 ---
 
 ### Using Super Pop
+
+Before starting please review the <a href="https://github.com/SuperBeastsAI/SuperBeastsAI-Models/blob/main/SuperPopColorAdjustment/LICENSE.txt" target="_blank">the licence</a> and [System Requirements](#System-Requirements) to run onnx models.
 
 1. Add **SB Load Model (SuperBeasts.AI)** node.
 2. Pick **SuperPopColorAdjustment/latest**.
@@ -45,21 +49,21 @@ Local/client use OK; no public SaaS redistribution.
 <table width="100%">
   <tr>
     <td style="width:25%" width="25%">Original</td>
-    <td style="width:25%" width="25%">S.P.C.A</td>
+    <td style="width:25%" width="25%">SPCA</td>
     <td style="width:25%" width="25%">Original</td>
-    <td style="width:25%" width="25%">S.P.C.A</td>
+    <td style="width:25%" width="25%">SPCA</td>
   </tr>
   <tr>
-    <td><img src="assets/examples/SPCA/5a.png" width="100%" alt="Original 1"></td>
-    <td><img src="assets/examples/SPCA/5b.png" width="100%" alt="S.P.C.A 1"></td>
-    <td><img src="assets/examples/SPCA/1a.png" width="100%" alt="Original 2"></td>
-    <td><img src="assets/examples/SPCA/1b.png" width="100%" alt="S.P.C.A 2"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/5a.png" width="100%" alt="Original 1"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/5b.png" width="100%" alt="SPCA 1"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/1a.png" width="100%" alt="Original 2"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/1b.png" width="100%" alt="SPCA 2"></td>
   </tr>
   <tr>
-    <td><img src="assets/examples/SPCA/2a.png" width="100%" alt="Original 3"></td>
-    <td><img src="assets/examples/SPCA/2b.png" width="100%" alt="S.P.C.A 3"></td>
-    <td><img src="assets/examples/SPCA/4a.png" width="100%" alt="Original 4"></td>
-    <td><img src="assets/examples/SPCA/4b.png" width="100%" alt="S.P.C.A 4"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/2a.png" width="100%" alt="Original 3"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/2b.png" width="100%" alt="SPCA 3"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/4a.png" width="100%" alt="Original 4"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/4b.png" width="100%" alt="SPCA 4"></td>
   </tr>
 </table>
 
@@ -68,21 +72,21 @@ Local/client use OK; no public SaaS redistribution.
 <table width="100%">
   <tr>
     <td style="width:25%" width="25%">Original</td>
-    <td style="width:25%" width="25%">S.P.C.A</td>
+    <td style="width:25%" width="25%">SPCA</td>
     <td style="width:25%" width="25%">Original</td>
-    <td style="width:25%" width="25%">S.P.C.A</td>
+    <td style="width:25%" width="25%">SPCA</td>
   </tr>
   <tr>
-    <td><img src="assets/examples/SPCA/41a.png" width="100%" alt="Original 1"></td>
-    <td><img src="assets/examples/SPCA/41b.png" width="100%" alt="S.P.C.A 1"></td>
-    <td><img src="assets/examples/SPCA/16a.png" width="100%" alt="Original 2"></td>
-    <td><img src="assets/examples/SPCA/16b.png" width="100%" alt="S.P.C.A 2"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/41a.png" width="100%" alt="Original 5"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/41b.png" width="100%" alt="SPCA 5"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/16a.png" width="100%" alt="Original 6"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/16b.png" width="100%" alt="SPCA 6"></td>
   </tr>
   <tr>
-    <td><img src="assets/examples/SPCA/27a.png" width="100%" alt="Original 3"></td>
-    <td><img src="assets/examples/SPCA/27b.png" width="100%" alt="S.P.C.A 3"></td>
-    <td><img src="assets/examples/SPCA/24a.png" width="100%" alt="Original 4"></td>
-    <td><img src="assets/examples/SPCA/24b.png" width="100%" alt="S.P.C.A 4"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/27a.png" width="100%" alt="Original 7"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/27b.png" width="100%" alt="SPCA 7"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/24a.png" width="100%" alt="Original 8"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/24b.png" width="100%" alt="SPCA 8"></td>
   </tr>
 </table>
 
@@ -92,21 +96,21 @@ Local/client use OK; no public SaaS redistribution.
 <table width="100%">
   <tr>
     <td style="width:25%" width="25%">Original</td>
-    <td style="width:25%" width="25%">S.P.C.A</td>
+    <td style="width:25%" width="25%">SPCA</td>
     <td style="width:25%" width="25%">Original</td>
-    <td style="width:25%" width="25%">S.P.C.A</td>
+    <td style="width:25%" width="25%">SPCA</td>
   </tr>
   <tr>
-    <td><img src="assets/examples/SPCA/6a.png" width="100%" alt="Original 1"></td>
-    <td><img src="assets/examples/SPCA/6b.png" width="100%" alt="S.P.C.A 1"></td>
-    <td><img src="assets/examples/SPCA/9a.png" width="100%" alt="Original 2"></td>
-    <td><img src="assets/examples/SPCA/9b.png" width="100%" alt="S.P.C.A 2"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/6a.png" width="100%" alt="Original 9"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/6b.png" width="100%" alt="SPCA 9"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/9a.png" width="100%" alt="Original 10"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/9b.png" width="100%" alt="SPCA 10"></td>
   </tr>
   <tr>
-    <td><img src="assets/examples/SPCA/38a.png" width="100%" alt="Original 3"></td>
-    <td><img src="assets/examples/SPCA/38b.png" width="100%" alt="S.P.C.A 3"></td>
-    <td><img src="assets/examples/SPCA/26a.png" width="100%" alt="Original 4"></td>
-    <td><img src="assets/examples/SPCA/26b.png" width="100%" alt="S.P.C.A 4"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/38a.png" width="100%" alt="Original 11"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/38b.png" width="100%" alt="SPCA 11"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/26a.png" width="100%" alt="Original 12"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/26b.png" width="100%" alt="SPCA 12"></td>
   </tr>
 </table>
 
@@ -116,21 +120,21 @@ Local/client use OK; no public SaaS redistribution.
 <table width="100%">
   <tr>
     <td style="width:25%" width="25%">Original</td>
-    <td style="width:25%" width="25%">S.P.C.A</td>
+    <td style="width:25%" width="25%">SPCA</td>
     <td style="width:25%" width="25%">Original</td>
-    <td style="width:25%" width="25%">S.P.C.A</td>
+    <td style="width:25%" width="25%">SPCA</td>
   </tr>
   <tr>
-    <td><img src="assets/examples/SPCA/7a.png" width="100%" alt="Original 1"></td>
-    <td><img src="assets/examples/SPCA/7b.png" width="100%" alt="S.P.C.A 1"></td>
-    <td><img src="assets/examples/SPCA/14a.png" width="100%" alt="Original 2"></td>
-    <td><img src="assets/examples/SPCA/14b.png" width="100%" alt="S.P.C.A 2"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/7a.png" width="100%" alt="Original 13"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/7b.png" width="100%" alt="SPCA 13"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/14a.png" width="100%" alt="Original 14"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/14b.png" width="100%" alt="SPCA 14"></td>
   </tr>
   <tr>
-    <td><img src="assets/examples/SPCA/13a.png" width="100%" alt="Original 3"></td>
-    <td><img src="assets/examples/SPCA/13b.png" width="100%" alt="S.P.C.A 3"></td>
-    <td><img src="assets/examples/SPCA/34a.png" width="100%" alt="Original 4"></td>
-    <td><img src="assets/examples/SPCA/34b.png" width="100%" alt="S.P.C.A 4"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/13a.png" width="100%" alt="Original 15"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/13b.png" width="100%" alt="SPCA 15"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/34a.png" width="100%" alt="Original 16"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/34b.png" width="100%" alt="SPCA 16"></td>
   </tr>
 </table>
 
@@ -140,21 +144,21 @@ Local/client use OK; no public SaaS redistribution.
 <table width="100%">
   <tr>
     <td style="width:25%" width="25%">Original</td>
-    <td style="width:25%" width="25%">S.P.C.A</td>
+    <td style="width:25%" width="25%">SPCA</td>
     <td style="width:25%" width="25%">Original</td>
-    <td style="width:25%" width="25%">S.P.C.A</td>
+    <td style="width:25%" width="25%">SPCA</td>
   </tr>
   <tr>
-    <td><img src="assets/examples/SPCA/25a.png" width="100%" alt="Original 1"></td>
-    <td><img src="assets/examples/SPCA/25b.png" width="100%" alt="S.P.C.A 1"></td>
-    <td><img src="assets/examples/SPCA/21a.png" width="100%" alt="Original 2"></td>
-    <td><img src="assets/examples/SPCA/21b.png" width="100%" alt="S.P.C.A 2"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/25a.png" width="100%" alt="Original 17"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/25b.png" width="100%" alt="SPCA 17"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/21a.png" width="100%" alt="Original 18"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/21b.png" width="100%" alt="SPCA 18"></td>
   </tr>
   <tr>
-    <td><img src="assets/examples/SPCA/35a.png" width="100%" alt="Original 3"></td>
-    <td><img src="assets/examples/SPCA/35b.png" width="100%" alt="S.P.C.A 3"></td>
-    <td><img src="assets/examples/SPCA/28a.png" width="100%" alt="Original 4"></td>
-    <td><img src="assets/examples/SPCA/28b.png" width="100%" alt="S.P.C.A 4"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/35a.png" width="100%" alt="Original 19"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/35b.png" width="100%" alt="SPCA 19"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/28a.png" width="100%" alt="Original 20"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/28b.png" width="100%" alt="SPCA 20"></td>
   </tr>
 </table>
 
@@ -164,21 +168,21 @@ Local/client use OK; no public SaaS redistribution.
 <table width="100%">
   <tr>
     <td style="width:25%" width="25%">Original</td>
-    <td style="width:25%" width="25%">S.P.C.A</td>
+    <td style="width:25%" width="25%">SPCA</td>
     <td style="width:25%" width="25%">Original</td>
-    <td style="width:25%" width="25%">S.P.C.A</td>
+    <td style="width:25%" width="25%">SPCA</td>
   </tr>
   <tr>
-    <td><img src="assets/examples/SPCA/18a.png" width="100%" alt="Original 1"></td>
-    <td><img src="assets/examples/SPCA/18b.png" width="100%" alt="S.P.C.A 1"></td>
-    <td><img src="assets/examples/SPCA/39a.png" width="100%" alt="Original 2"></td>
-    <td><img src="assets/examples/SPCA/39b.png" width="100%" alt="S.P.C.A 2"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/18a.png" width="100%" alt="Original 21"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/18b.png" width="100%" alt="SPCA 21"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/39a.png" width="100%" alt="Original 22"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/39b.png" width="100%" alt="SPCA 22"></td>
   </tr>
   <tr>
-    <td><img src="assets/examples/SPCA/37a.png" width="100%" alt="Original 3"></td>
-    <td><img src="assets/examples/SPCA/37b.png" width="100%" alt="S.P.C.A 3"></td>
-    <td><img src="assets/examples/SPCA/40a.png" width="100%" alt="Original 4"></td>
-    <td><img src="assets/examples/SPCA/40b.png" width="100%" alt="S.P.C.A 4"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/37a.png" width="100%" alt="Original 23"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/37b.png" width="100%" alt="SPCA 23"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/40a.png" width="100%" alt="Original 24"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/40b.png" width="100%" alt="SPCA 24"></td>
   </tr>
 </table>
 
@@ -244,5 +248,23 @@ down-scaled or abstract images work great but this only plays a small role in th
 
 ### System Requirements
 
-Works out-of-the-box on CPU via `onnxruntime`.  For **10×** speed improvement ensure ComfyUI can use the `CUDAExecutionProvider` by using onnxruntime-gpu with the hardware that allows this. 
-This node print out the currently available providers into the ComfyUI server logs if you need to check this. 
+Works out-of-the-box on CPU via `onnxruntime` but it is extremely slow and I wouldn't recommend it. 
+For **10×** speed improvement ensure ComfyUI can use the `CUDAExecutionProvider` by installing `onnxruntime-gpu` into the ComfyUI environment. 
+
+This node currently prints out the available providers for onnxruntime into the ComfyUI server logs when you run the node. So if you are not seeing `CUDAExecutionProvider` it's likely the model is using CPU instead. 
+
+For reference I use:
+Python version: 3.12.1 
+pytorch version: 2.5.0+cu124
+NVIDIA GeForce RTX 4090 
+with onnxruntime-gpu installed in the ComfyUI Environment
+and C:\Program Files\NVIDIA\CUDNN\vX.X\bin on your System Path (where x.x is your version)
+For more on debugging try tips from the user here: https://github.com/SuperBeastsAI/ComfyUI-SuperBeasts/issues/10#issuecomment-3113530795
+
+Results - Server Logs show: 
+[SuperBeasts] ONNX Runtime providers available: ['TensorrtExecutionProvider', 'CUDAExecutionProvider', 'CPUExecutionProvider']
+[SuperBeasts] Using ORT providers: ['CUDAExecutionProvider', 'CPUExecutionProvider']
+1024x1024px with 0.5 overlap = 1.63s
+2048x2048px with 0.5 overlap = 5.23s
+
+Note: I am aware the extra installation of `onnxruntime-gpu` isn't ideal and I'm attempting to convert the model into .safetensors to work within the ComfyUI Pytorch environment better with less issues accessing the GPU. 

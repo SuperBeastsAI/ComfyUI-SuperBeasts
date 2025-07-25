@@ -406,26 +406,42 @@ class SBLoadModel:
             # even if the relative path is somehow manipulated.
             # ------------------------------------------------------------------
 
-            module_path = (model_dir / 'contextual_residual_unet_v4.py').resolve()
+            # Updated lightweight architecture lives in *_pt.py*
+            module_path = (model_dir / 'contextual_residual_unet_v4_pt.py').resolve()
             allowed_root = model_dir.resolve()
             if not str(module_path).startswith(str(allowed_root)):
                 raise RuntimeError("Blocked unsafe module import: path escapes plugin directory")
 
             sys.path.append(str(model_dir))
-            spec = importlib.util.spec_from_file_location('contextual_residual_unet_v4', module_path)
+            spec = importlib.util.spec_from_file_location('contextual_residual_unet_v4_pt', module_path)
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)  # type: ignore
             ContextualResidualUNetV4Torch = module.ContextualResidualUNetV4Torch
 
             device_str = 'cuda' if device == 'GPU' and torch.cuda.is_available() else 'cpu'
-            # Attempt to locate the matching ONNX graph so the wrapper can rebuild
-            # the network topology deterministically.
+
+            # Prefer TorchScript if it exists next to the safetensors
             base_no_ext = os.path.splitext(model_path)[0]
-            onnx_candidate = base_no_ext + '.onnx'
-            model_pt = ContextualResidualUNetV4Torch(onnx_candidate if os.path.isfile(onnx_candidate) else None)
-            state = safe_load(model_path, device=device_str)
-            model_pt.load_state_dict(state, strict=False)
-            model_pt.eval().to(device_str)
+            pt_path_candidates = [base_no_ext + '.pt', base_no_ext + '_scripted.pt']
+            pt_path = next((p for p in pt_path_candidates if os.path.isfile(p)), None)
+            if os.path.isfile(pt_path):
+                try:
+                    model_pt = torch.jit.load(pt_path, map_location=device_str)
+                    model_pt.eval()
+                except Exception as e:
+                    raise RuntimeError(f"Failed to load TorchScript companion file {pt_path}: {e}")
+            else:
+                # Fall back to python architecture + direct state_dict load (legacy path)
+                model_pt = ContextualResidualUNetV4Torch()
+
+                state_in = safe_load(model_path, device='cpu')
+                try:
+                    model_pt.load_state_dict(state_in, strict=True)
+                except Exception as e:
+                    raise RuntimeError("Checkpoint did not match architecture and no .pt file found. "
+                                       "Convert the model to TorchScript to avoid mismatches.\n" + str(e))
+
+                model_pt.eval()
 
             model_info = {
                 "model": model_pt,

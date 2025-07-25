@@ -13,7 +13,7 @@ Repository = "https://github.com/SuperBeastsAI/ComfyUI-SuperBeasts"
 [tool.comfy]
 PublisherId = "superbeastsai"
 DisplayName = "ComfyUI-SuperBeasts"
-Icon = "https://raw.githubusercontent.com/SuperBeastsAI/ComfyUI-SuperBeasts/refs/heads/master/docs/assets/icon.png"
+Icon = "https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/icon.png"
 excludes = [
   "docs"
 ]
