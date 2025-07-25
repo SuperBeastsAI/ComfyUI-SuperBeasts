@@ -19,7 +19,7 @@ Happy generating!!
 
 ### Using Super Pop
 
-Before starting please review the <a href="https://github.com/SuperBeastsAI/SuperBeastsAI-Models/blob/main/SuperPopColorAdjustment/LICENSE.txt" target="_blank">the licence</a> and [System Requirements](###System-Requirements) to run onnx models.
+Before starting please review the <a href="https://github.com/SuperBeastsAI/SuperBeastsAI-Models/blob/main/SuperPopColorAdjustment/LICENSE.txt" target="_blank">the licence</a> and [System Requirements](#System-Requirements) to run onnx models.
 
 1. Add **SB Load Model (SuperBeasts.AI)** node.
 2. Pick **SuperPopColorAdjustment/latest**.
