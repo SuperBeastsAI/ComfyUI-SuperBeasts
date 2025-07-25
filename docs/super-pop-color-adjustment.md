@@ -19,6 +19,8 @@ Happy generating!!
 
 ### Using Super Pop
 
+Before starting please review the <a href="https://github.com/SuperBeastsAI/SuperBeastsAI-Models/blob/main/SuperPopColorAdjustment/LICENSE.txt" target="_blank">the licence</a> and [System Requirements](####System Requirements) to run onnx models.
+
 1. Add **SB Load Model (SuperBeasts.AI)** node.
 2. Pick **SuperPopColorAdjustment/latest**.
 3a. Connect to **Super Pop Color Adjustment (SuperBeasts.AI)** node.
@@ -244,7 +246,8 @@ down-scaled or abstract images work great but this only plays a small role in th
 
 ### System Requirements
 
-Works out-of-the-box on CPU via `onnxruntime` but it is extremely slow.  For **10×** speed improvement ensure ComfyUI can use the `CUDAExecutionProvider` by installing `onnxruntime-gpu` into the ComfyUI environment. 
+Works out-of-the-box on CPU via `onnxruntime` but it is extremely slow and I wouldn't recommend it. 
+For **10×** speed improvement ensure ComfyUI can use the `CUDAExecutionProvider` by installing `onnxruntime-gpu` into the ComfyUI environment. 
 
 This node currently prints out the available providers for onnxruntime into the ComfyUI server logs when you run the node. So if you are not seeing `CUDAExecutionProvider` it's likely the model is using CPU instead. 
 
@@ -252,6 +255,9 @@ For reference I use:
 Python version: 3.12.1 
 pytorch version: 2.5.0+cu124
 NVIDIA GeForce RTX 4090 
+with onnxruntime-gpu installed in the ComfyUI Environment
+and C:\Program Files\NVIDIA\CUDNN\vX.X\bin on your System Path (where x.x is your version)
+For more on debugging try tips from the user here: https://github.com/SuperBeastsAI/ComfyUI-SuperBeasts/issues/10#issuecomment-3113530795
 
 Results - Server Logs show: 
 [SuperBeasts] ONNX Runtime providers available: ['TensorrtExecutionProvider', 'CUDAExecutionProvider', 'CPUExecutionProvider']
