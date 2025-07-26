@@ -1,4 +1,4 @@
-<img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/examples/SPCA-Header.webp">
+<img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/examples/SPCA-Header-opt.webp">
 
 # Super Pop Color Adjustment (SuperBeasts.AI)
 
