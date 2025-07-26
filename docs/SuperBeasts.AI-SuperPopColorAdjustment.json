@@ -1,7 +1,7 @@
 {
   "id": "f616e3a0-cf66-4f06-9787-fd37ac226747",
   "revision": 0,
-  "last_node_id": 133,
+  "last_node_id": 134,
   "last_link_id": 306,
   "nodes": [
     {
@@ -16,7 +16,7 @@
         180
       ],
       "flags": {},
-      "order": 5,
+      "order": 6,
       "mode": 4,
       "inputs": [
         {
@@ -53,32 +53,6 @@
       "bgcolor": "#000048"
     },
     {
-      "id": 113,
-      "type": "Note",
-      "pos": [
-        -660,
-        -800
-      ],
-      "size": [
-        390,
-        150
-      ],
-      "flags": {},
-      "order": 0,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [],
-      "title": "Super Pop Color Adjustment Recommendations",
-      "properties": {
-        "widget_ue_connectable": {}
-      },
-      "widgets_values": [
-        "- Image(s) 512 - 2048px\n- Context Image - Empty uses it's self for correction context\n- Max strength 1.0\n- Count 1\n- Overlap at least 0.3 (higher is better up to ~0.9 if GPU allows for final images)\n\nExamples and instructions: https://github.com/SuperBeastsAI/ComfyUI-SuperBeasts/blob/master/docs/super-pop-color-adjustment.md"
-      ],
-      "color": "#d67023",
-      "bgcolor": "#c25c0f"
-    },
-    {
       "id": 121,
       "type": "Super Pop Residual Blend (SuperBeasts.AI)",
       "pos": [
@@ -90,7 +64,7 @@
         78
       ],
       "flags": {},
-      "order": 7,
+      "order": 8,
       "mode": 0,
       "inputs": [
         {
@@ -142,7 +116,7 @@
         900
       ],
       "flags": {},
-      "order": 11,
+      "order": 12,
       "mode": 0,
       "inputs": [
         {
@@ -171,12 +145,12 @@
           {
             "name": "A",
             "selected": true,
-            "url": "/api/view?filename=rgthree.compare._temp_zisus_00025_.png&type=temp&subfolder=&preview=webp&rand=0.12061521654902096"
+            "url": "/api/view?filename=rgthree.compare._temp_napam_00011_.png&type=temp&subfolder=&preview=webp&rand=0.5994639106827766"
           },
           {
             "name": "B",
             "selected": true,
-            "url": "/api/view?filename=rgthree.compare._temp_zisus_00026_.png&type=temp&subfolder=&preview=webp&rand=0.3100928355954683"
+            "url": "/api/view?filename=rgthree.compare._temp_napam_00012_.png&type=temp&subfolder=&preview=webp&rand=0.6550383932018624"
           }
         ]
       ],
@@ -195,7 +169,7 @@
         900
       ],
       "flags": {},
-      "order": 10,
+      "order": 11,
       "mode": 0,
       "inputs": [
         {
@@ -224,12 +198,12 @@
           {
             "name": "A",
             "selected": true,
-            "url": "/api/view?filename=rgthree.compare._temp_difuo_00025_.png&type=temp&subfolder=&preview=webp&rand=0.2381890175765341"
+            "url": "/api/view?filename=rgthree.compare._temp_qdbat_00011_.png&type=temp&subfolder=&preview=webp&rand=0.1573443092393756"
           },
           {
             "name": "B",
             "selected": true,
-            "url": "/api/view?filename=rgthree.compare._temp_difuo_00026_.png&type=temp&subfolder=&preview=webp&rand=0.1267883942778919"
+            "url": "/api/view?filename=rgthree.compare._temp_qdbat_00012_.png&type=temp&subfolder=&preview=webp&rand=0.4411625920036373"
           }
         ]
       ],
@@ -248,7 +222,7 @@
         282
       ],
       "flags": {},
-      "order": 6,
+      "order": 7,
       "mode": 0,
       "inputs": [
         {
@@ -287,7 +261,7 @@
         900
       ],
       "flags": {},
-      "order": 9,
+      "order": 10,
       "mode": 0,
       "inputs": [
         {
@@ -316,54 +290,17 @@
           {
             "name": "A",
             "selected": true,
-            "url": "/api/view?filename=rgthree.compare._temp_ycmde_00025_.png&type=temp&subfolder=&preview=webp&rand=0.7170845396129458"
+            "url": "/api/view?filename=rgthree.compare._temp_yxfst_00011_.png&type=temp&subfolder=&preview=webp&rand=0.5008063946585531"
           },
           {
             "name": "B",
             "selected": true,
-            "url": "/api/view?filename=rgthree.compare._temp_ycmde_00026_.png&type=temp&subfolder=&preview=webp&rand=0.42308399021076515"
+            "url": "/api/view?filename=rgthree.compare._temp_yxfst_00012_.png&type=temp&subfolder=&preview=webp&rand=0.3314270420234019"
           }
         ]
       ],
       "color": "#2a363b",
       "bgcolor": "#3f5159"
-    },
-    {
-      "id": 102,
-      "type": "SB Load Model (SuperBeasts.AI)",
-      "pos": [
-        -660,
-        -420
-      ],
-      "size": [
-        390,
-        82
-      ],
-      "flags": {},
-      "order": 1,
-      "mode": 0,
-      "inputs": [],
-      "outputs": [
-        {
-          "name": "model",
-          "type": "SBMODEL",
-          "links": [
-            273
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "SB Load Model (SuperBeasts.AI)",
-        "cnr_id": "comfyui-superbeasts",
-        "ver": "73a6a22138b32cd76318a48c594050b91906901d",
-        "widget_ue_connectable": {}
-      },
-      "widgets_values": [
-        "SuperBeasts_ColorAdjustment_512px_V1.safetensors",
-        "GPU"
-      ],
-      "color": "#14145c",
-      "bgcolor": "#000048"
     },
     {
       "id": 93,
@@ -377,7 +314,7 @@
         1000
       ],
       "flags": {},
-      "order": 2,
+      "order": 0,
       "mode": 0,
       "inputs": [],
       "outputs": [
@@ -418,7 +355,7 @@
         82
       ],
       "flags": {},
-      "order": 3,
+      "order": 4,
       "mode": 0,
       "inputs": [
         {
@@ -454,6 +391,147 @@
       ]
     },
     {
+      "id": 118,
+      "type": "Super Pop Residual Blend (SuperBeasts.AI)",
+      "pos": [
+        1630,
+        160
+      ],
+      "size": [
+        374.6089782714844,
+        78
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 283
+        },
+        {
+          "name": "residual",
+          "type": "SPCA_RESIDUAL",
+          "link": 289
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [
+            296
+          ]
+        },
+        {
+          "name": "filename_prefix",
+          "type": "STRING",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "Super Pop Residual Blend (SuperBeasts.AI)",
+        "cnr_id": "comfyui-superbeasts",
+        "ver": "117a4529ab5f0ec0145da3e50d61ef73046fa821",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        1.5000000000000002
+      ],
+      "color": "#14145c",
+      "bgcolor": "#000048"
+    },
+    {
+      "id": 113,
+      "type": "Note",
+      "pos": [
+        -660,
+        -800
+      ],
+      "size": [
+        390,
+        150
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Super Pop Color Adjustment Recommendations",
+      "properties": {
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "- Image(s) 512 - 2048px\n- Context Image - Empty uses it's self for correction context\n- Max strength 1.0\n- Count 1\n- Overlap at least 0.3 (higher is better up to ~0.9 if GPU allows for final images)\n\nExamples and instructions: https://github.com/SuperBeastsAI/ComfyUI-SuperBeasts/blob/master/docs/super-pop-color-adjustment.md"
+      ],
+      "color": "#d67023",
+      "bgcolor": "#c25c0f"
+    },
+    {
+      "id": 134,
+      "type": "Note",
+      "pos": [
+        1320,
+        160
+      ],
+      "size": [
+        280,
+        88
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Reweight",
+      "properties": {
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "These nodes use the already computed correction where you can weight it on the fly (typically) without re-running the model.\nNote: Some nodes cause a rerun regardless."
+      ],
+      "color": "#d67023",
+      "bgcolor": "#c25c0f"
+    },
+    {
+      "id": 102,
+      "type": "SB Load Model (SuperBeasts.AI)",
+      "pos": [
+        -660,
+        -420
+      ],
+      "size": [
+        390,
+        82
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "SBMODEL",
+          "links": [
+            273
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "SB Load Model (SuperBeasts.AI)",
+        "cnr_id": "comfyui-superbeasts",
+        "ver": "73a6a22138b32cd76318a48c594050b91906901d",
+        "widget_ue_connectable": {}
+      },
+      "widgets_values": [
+        "SuperPopColorAdjustment/latest",
+        "AUTO"
+      ],
+      "color": "#14145c",
+      "bgcolor": "#000048"
+    },
+    {
       "id": 120,
       "type": "Super Pop Color Adjustment (SuperBeasts.AI)",
       "pos": [
@@ -465,7 +543,7 @@
         170
       ],
       "flags": {},
-      "order": 4,
+      "order": 5,
       "mode": 0,
       "inputs": [
         {
@@ -519,60 +597,8 @@
       "widgets_values": [
         1,
         1,
-        0.7500000000000001,
+        0.5000000000000001,
         false
-      ],
-      "color": "#14145c",
-      "bgcolor": "#000048"
-    },
-    {
-      "id": 118,
-      "type": "Super Pop Residual Blend (SuperBeasts.AI)",
-      "pos": [
-        1630,
-        160
-      ],
-      "size": [
-        374.6089782714844,
-        78
-      ],
-      "flags": {},
-      "order": 8,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "IMAGE",
-          "link": 283
-        },
-        {
-          "name": "residual",
-          "type": "SPCA_RESIDUAL",
-          "link": 289
-        }
-      ],
-      "outputs": [
-        {
-          "name": "images",
-          "type": "IMAGE",
-          "links": [
-            296
-          ]
-        },
-        {
-          "name": "filename_prefix",
-          "type": "STRING",
-          "links": []
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "Super Pop Residual Blend (SuperBeasts.AI)",
-        "cnr_id": "comfyui-superbeasts",
-        "ver": "117a4529ab5f0ec0145da3e50d61ef73046fa821",
-        "widget_ue_connectable": {}
-      },
-      "widgets_values": [
-        1.5000000000000002
       ],
       "color": "#14145c",
       "bgcolor": "#000048"
@@ -765,10 +791,10 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.7513148009015783,
+      "scale": 0.6830134553650705,
       "offset": [
-        1300.3125958595183,
-        919.6808269326773
+        1641.6604953174497,
+        1348.3813587474044
       ]
     },
     "frontendVersion": "1.23.4",

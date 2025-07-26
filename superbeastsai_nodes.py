@@ -44,7 +44,9 @@ _SUPERBEASTS_SILENCE_LICENSE_ENV = "SUPERBEASTS_SILENCE_LICENSE"
 # Registry of published model families → version → filename
 _MODEL_REGISTRY: dict[str, dict[str, str]] = {
     "SuperPopColorAdjustment": {
+        # Default to safetensors weights. Companion TorchScript (.pt) and
         "v1.0": "SuperBeasts_ColorAdjustment_512px_V1.onnx",
+        "v2.0": "SuperBeasts_ColorAdjustment_512px_V2.safetensors",
     },
     # Future models / versions can be added here
 }
@@ -58,6 +60,7 @@ _MODEL_REGISTRY: dict[str, dict[str, str]] = {
 
 _MODEL_SHA256: dict[str, str] = {
     "SuperBeasts_ColorAdjustment_512px_V1.onnx": "a813fbb091dc7849f460f17e54c70cc6e6ef2984589a0ae94ab308d2957dc4ad",
+    "SuperBeasts_ColorAdjustment_512px_V2.safetensors": "1a7e0aaa54d565b827c619a452bdeb04fd12975178b39560b92fe34cb839a065",
 }
 
 # Helper – compute sha256 digest of a file (hex string)
@@ -231,15 +234,15 @@ def _maybe_print_spca_license_notice(models_dir: str):
 
 
 def _discover_sb_models(models_dir: str):
-    """Return a list of available .keras / .h5 model filenames (relative, not absolute)."""
+    """Return a list of available model filenames (searches recursively)."""
     if not os.path.isdir(models_dir):
         return []
     names = []
-    for file in os.listdir(models_dir):
-        if file.lower().endswith(('.keras', '.h5', '.safetensors', '.onnx')):
-            names.append(file)
-    # Sort for stable dropdown order
-    return sorted(names)
+    for root, _dirs, files in os.walk(models_dir):
+        for file in files:
+            if file.lower().endswith(('.keras', '.h5', '.safetensors', '.onnx', '.pt')):
+                names.append(file)
+    return sorted(set(names))
 
 
 class SBLoadModel:
@@ -312,39 +315,108 @@ class SBLoadModel:
             version = _latest_version(family)
             filename = model_key
 
-        models_dir = os.path.join(os.path.dirname(__file__), 'models')
-        os.makedirs(models_dir, exist_ok=True)
-        model_path = os.path.join(models_dir, filename)
+        # Resolve model storage directories --------------------------------
+        models_root = os.path.join(os.path.dirname(__file__), 'models')
+        version_dir = os.path.join(models_root, version)
+        os.makedirs(version_dir, exist_ok=True)
+
+        # Look for existing file in version dir first, then root (for legacy installs)
+        candidate_dirs = [version_dir, models_root]
+        model_path = None  # type: ignore[assignment]
+        for _dir in candidate_dirs:
+            cand_path = os.path.join(_dir, filename)
+            if os.path.isfile(cand_path):
+                model_path = cand_path
+                models_dir = _dir  # use this dir for subsequent operations
+                break
+
+        if model_path is None:
+            # Default to version_dir for new downloads
+            models_dir = version_dir
+            model_path = os.path.join(models_dir, filename)
 
         # --------------------------------------------------------------
-        # Prefer a local .safetensors file when the expected ONNX model
-        # is missing.  This allows users to convert the published ONNX
-        # weights to PyTorch+Safetensors locally (using e.g., onnx2pytorch)
-        # without having to edit the registry or node settings.
+        # Prioritise *.safetensors → *.pt → *.onnx in that order. If the
+        # requested file is missing locally we look for any preferred
+        # alternative that already exists. Otherwise we attempt to
+        # download the best-quality format available from the official
+        # model registry, trying each extension until one succeeds.
         # --------------------------------------------------------------
         if not os.path.isfile(model_path):
-            base_name, orig_ext = os.path.splitext(filename)
-            alt_ext = '.safetensors' if orig_ext.lower() != '.safetensors' else '.onnx'
-            alt_filename = base_name + alt_ext
-            alt_path = os.path.join(models_dir, alt_filename)
-            if os.path.isfile(alt_path):
-                # Found an alternative local file – switch to it.
-                filename = alt_filename
-                model_path = alt_path
-            else:
-                # No local alternative – attempt remote download of the
-                # originally requested filename (usually the ONNX weights).
-                rel_path = f"{family}/{version}/{filename}"
-                try:
-                    _download_remote_model(rel_path, model_path)
-                except Exception as e:
+            base_name, _orig_ext = os.path.splitext(filename)
+
+            # Preferred search / download order
+            _EXT_PRIORITY = ['.safetensors', '.pt', '.onnx']
+
+            # Build ordered unique candidate list starting with preferred
+            cand_filenames = [base_name + ext for ext in _EXT_PRIORITY]
+            if filename not in cand_filenames:
+                # Include the originally requested filename at front if it
+                # does not conform to the priority list (for backwards compatibility)
+                cand_filenames.insert(0, filename)
+
+            # 1) Check for any existing local file following priority
+            model_found = False
+            for cand in cand_filenames:
+                cand_path = os.path.join(models_dir, cand)
+                if os.path.isfile(cand_path):
+                    filename = cand
+                    model_path = cand_path
+                    model_found = True
+                    break
+
+            # 2) Attempt remote download for each preferred extension
+            if not model_found:
+                last_exc = None
+                for cand in cand_filenames:
+                    rel_path = f"{family}/{version}/{cand}"
+                    cand_path = os.path.join(models_dir, cand)
+                    try:
+                        _download_remote_model(rel_path, cand_path)
+                        filename = cand
+                        model_path = cand_path
+                        model_found = True
+                        break
+                    except Exception as e:
+                        last_exc = e  # keep last for context
+                        continue
+
+                if not model_found:
                     raise FileNotFoundError(
-                        f"Model file not found locally and automatic download failed.\n"
-                        f"Attempted path: {rel_path}\n{e}"
+                        f"Model file not found locally and automatic download failed for any supported extension (.safetensors/.pt/.onnx).\nLast error: {last_exc}"
                     )
-        else:
-            # File exists locally; nothing to do.
-            pass
+            else:
+                # File exists locally; nothing to do.
+                pass
+
+            # --------------------------------------------------------------
+            # Ensure both *.safetensors and companion *.pt files are present
+            # (useful for users who switch between Torch and TorchScript).
+            # --------------------------------------------------------------
+            base_name, _ = os.path.splitext(filename)
+            for _ext in ('.safetensors', '.pt'):
+                _comp_path = os.path.join(models_dir, base_name + _ext)
+                if not os.path.isfile(_comp_path):
+                    try:
+                        _download_remote_model(f"{family}/{version}/{base_name + _ext}", _comp_path)
+                    except Exception:
+                        # It's OK if one of the companion formats is missing from the
+                        # remote registry – we just skip silently.
+                        pass
+
+            # --------------------------------------------------------------
+            # Attempt to download optional metadata JSON (licence, provenance).
+            # The file is named <base>_MODEL_INFO.json in the remote repo.
+            # --------------------------------------------------------------
+            _meta_filename = f"{base_name}_MODEL_INFO.json"
+            _meta_path = os.path.join(models_dir, _meta_filename)
+            if not os.path.isfile(_meta_path):
+                try:
+                    # Remote repo stores a generic MODEL_INFO.json per version.
+                    _download_remote_model(f"{family}/{version}/MODEL_INFO.json", _meta_path)
+                except Exception:
+                    # Non-critical: metadata missing – warn once.
+                    print(f"[SuperBeasts] Warning: metadata file not found for {_meta_filename}")
 
         # --- Security: check SHA-256 digest (raises if mismatch) ---
         try:
@@ -400,14 +472,28 @@ class SBLoadModel:
             from safetensors.torch import load_file as safe_load
             import importlib.util, sys, pathlib
             model_dir = pathlib.Path(__file__).parent / 'torch_models'
+            model_dir.mkdir(exist_ok=True)
+
+            # ------------------------------------------------------------------
+            # Ensure architecture implementation file is present – download on
+            # demand if missing so repo stays lean for users who only use ONNX.
+            # ------------------------------------------------------------------
+            arch_filename = 'contextual_residual_unet_v4_pt.py'
+            module_path = (model_dir / arch_filename).resolve()
+            if not module_path.exists():
+                try:
+                    rel_path_arch = f"{family}/TorchModel/{arch_filename}"
+                    _download_remote_model(rel_path_arch, str(module_path))
+                except Exception as e:
+                    raise RuntimeError(
+                        "Required architecture file was not found locally and automatic download failed.\n" + str(e)
+                    )
 
             # ------------------------------------------------------------------
             # Safety guard – ensure we never import a file outside our plugin dir
             # even if the relative path is somehow manipulated.
             # ------------------------------------------------------------------
 
-            # Updated lightweight architecture lives in *_pt.py*
-            module_path = (model_dir / 'contextual_residual_unet_v4_pt.py').resolve()
             allowed_root = model_dir.resolve()
             if not str(module_path).startswith(str(allowed_root)):
                 raise RuntimeError("Blocked unsafe module import: path escapes plugin directory")
@@ -424,7 +510,7 @@ class SBLoadModel:
             base_no_ext = os.path.splitext(model_path)[0]
             pt_path_candidates = [base_no_ext + '.pt', base_no_ext + '_scripted.pt']
             pt_path = next((p for p in pt_path_candidates if os.path.isfile(p)), None)
-            if os.path.isfile(pt_path):
+            if pt_path and os.path.isfile(pt_path):
                 try:
                     model_pt = torch.jit.load(pt_path, map_location=device_str)
                     model_pt.eval()
@@ -502,6 +588,10 @@ class SBLoadModel:
                 "type": "onnx",
             }
 
+        # Attach metadata path if we fetched it earlier
+        if '_meta_path' in locals() and os.path.isfile(_meta_path):
+            model_info["metadata_path"] = _meta_path
+        
         # Cache and return
         self._model_cache[model_path] = model_info
         return (model_info, )

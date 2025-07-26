@@ -10,3 +10,4 @@ models/
 *.safetensors
 MODEL_INFO.json
 SHA256SUMS.txt
+arc/

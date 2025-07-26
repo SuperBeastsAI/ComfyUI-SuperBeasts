@@ -24,7 +24,7 @@ Happy generating!!
 Before starting please review the <a href="https://github.com/SuperBeastsAI/SuperBeastsAI-Models/blob/main/SuperPopColorAdjustment/LICENSE.txt" target="_blank">the licence</a> and [System Requirements](#System-Requirements) to run onnx models.
 
 1. Add **SB Load Model (SuperBeasts.AI)** node.
-2. Pick **SuperPopColorAdjustment/latest**.
+2. Pick **SuperPopColorAdjustment/latest**. (Now from V2 using .safetensors)
 3a. Connect to **Super Pop Color Adjustment (SuperBeasts.AI)** node.
 3b. Input source image and tune *Max Strength*, *Count*, *Overlap* (recommendations below)
 4. Optional - Use the **Super Pop Residual Blend (SuperBeasts.AI)** for full control of the strength. (Useful to experiement with strength settings without repeat runs of the model)
@@ -77,7 +77,7 @@ Local/client use OK; no public SaaS redistribution.
     <td style="width:25%" width="25%">SPCA</td>
   </tr>
   <tr>
-    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/41a.png" width="100%" alt="Original 5"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/41a-1.png" width="100%" alt="Original 5"></td>
     <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/41b.png" width="100%" alt="SPCA 5"></td>
     <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/16a.png" width="100%" alt="Original 6"></td>
     <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/16b.png" width="100%" alt="SPCA 6"></td>
@@ -103,7 +103,7 @@ Local/client use OK; no public SaaS redistribution.
   <tr>
     <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/6a.png" width="100%" alt="Original 9"></td>
     <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/6b.png" width="100%" alt="SPCA 9"></td>
-    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/9a.png" width="100%" alt="Original 10"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/9a.png?id=1" width="100%" alt="Original 10"></td>
     <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/9b.png" width="100%" alt="SPCA 10"></td>
   </tr>
   <tr>
@@ -133,7 +133,7 @@ Local/client use OK; no public SaaS redistribution.
   <tr>
     <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/13a.png" width="100%" alt="Original 15"></td>
     <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/13b.png" width="100%" alt="SPCA 15"></td>
-    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/34a.png" width="100%" alt="Original 16"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/34a-1.png" width="100%" alt="Original 16"></td>
     <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/34b.png" width="100%" alt="SPCA 16"></td>
   </tr>
 </table>
@@ -150,12 +150,12 @@ Local/client use OK; no public SaaS redistribution.
   </tr>
   <tr>
     <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/25a.png" width="100%" alt="Original 17"></td>
-    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/25b.png" width="100%" alt="SPCA 17"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/25b.png?id=1" width="100%" alt="SPCA 17"></td>
     <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/21a.png" width="100%" alt="Original 18"></td>
     <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/21b.png" width="100%" alt="SPCA 18"></td>
   </tr>
   <tr>
-    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/35a.png" width="100%" alt="Original 19"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/35a-1.png" width="100%" alt="Original 19"></td>
     <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/35b.png" width="100%" alt="SPCA 19"></td>
     <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/28a.png" width="100%" alt="Original 20"></td>
     <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/28b.png" width="100%" alt="SPCA 20"></td>
@@ -248,6 +248,16 @@ down-scaled or abstract images work great but this only plays a small role in th
 
 ### System Requirements
 
+#### Latest version 2.0 uses .safetensors
+
+From version 2.0 .safetensors model is in use with corresponding .pt file this model now runs natively in standard Comfy environment. 
+GPU is still recommended where you will acheive speeds such as: 
+
+- 1024x1024px with 0.5 overlap = 1.63s
+- 2048x2048px with 0.5 overlap = 5.23s
+
+#### Legacy 1.0 Onnx Model
+
 Works out-of-the-box on CPU via `onnxruntime` but it is extremely slow and I wouldn't recommend it. 
 For **10×** speed improvement ensure ComfyUI can use the `CUDAExecutionProvider` by installing `onnxruntime-gpu` into the ComfyUI environment. 
 
@@ -261,10 +271,7 @@ with onnxruntime-gpu installed in the ComfyUI Environment
 and C:\Program Files\NVIDIA\CUDNN\vX.X\bin on your System Path (where x.x is your version)
 For more on debugging try tips from the user here: https://github.com/SuperBeastsAI/ComfyUI-SuperBeasts/issues/10#issuecomment-3113530795
 
-Results - Server Logs show: 
+Server Logs show: 
 [SuperBeasts] ONNX Runtime providers available: ['TensorrtExecutionProvider', 'CUDAExecutionProvider', 'CPUExecutionProvider']
 [SuperBeasts] Using ORT providers: ['CUDAExecutionProvider', 'CPUExecutionProvider']
-1024x1024px with 0.5 overlap = 1.63s
-2048x2048px with 0.5 overlap = 5.23s
 
-Note: I am aware the extra installation of `onnxruntime-gpu` isn't ideal and I'm attempting to convert the model into .safetensors to work within the ComfyUI Pytorch environment better with less issues accessing the GPU. 
