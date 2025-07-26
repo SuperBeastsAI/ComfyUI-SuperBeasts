@@ -3,7 +3,6 @@ __pycache__
 *.code-workspace
 models/
 # SuperBeasts model weights
-models/
 *.onnx
 *.orig.onnx
 *.pth

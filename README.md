@@ -2,14 +2,13 @@
 
 
 ## 🆕 Recent Updates
-- **20/07/2025** –  New ComfyUI node version 1.1 which now includes *Super Pop Color Adjustment* model + node released.
+- **26/07/2025** –  New ComfyUI node version 1.2 which now includes *Super Pop Color Adjustment* model with v2.0 safetensors version.
+- **20/07/2025** –  New ComfyUI node version 1.1 which now includes *Super Pop Color Adjustment* model + with onnx model released.
 ---
 
 # 🔥 Available now: Super Pop Color Adjustment Model & Nodes
 
-<p align="center">
-  <img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/examples/SPCA-Header-opt.webp" alt="SuperBeasts.AI Super Pop Color Adjustment" width="100%" />
-</p>
+<img src="docs/images/SPCA-Header-opt.webp" width="100%">
 
 **Super Pop Color Adjustment** · *A fast residual color adjustment model for vibrant palettes, deep blacks, crisp highlights, HDR bite – in one shot.*
 
