@@ -158,7 +158,7 @@ Local/client use OK; no public SaaS redistribution.
     <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/35a-1024px.png" width="100%" alt="Original 19"></td>
     <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/35b-1024px.png" width="100%" alt="SPCA 19"></td>
     <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/28a-1024px.png" width="100%" alt="Original 20"></td>
-    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/28b-1024px.png?id-1" width="100%" alt="SPCA 20"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/28b-1024px.png?id=2" width="100%" alt="SPCA 20"></td>
   </tr>
 </table>
 
