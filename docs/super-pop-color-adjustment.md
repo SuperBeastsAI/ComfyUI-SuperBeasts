@@ -78,7 +78,7 @@ Local/client use OK; no public SaaS redistribution.
   </tr>
   <tr>
     <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/41a-1024px.png" width="100%" alt="Original 5"></td>
-    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/41b-1024px.png" width="100%" alt="SPCA 5"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/41b-1024px.png?id-1" width="100%" alt="SPCA 5"></td>
     <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/16a-1024px.png" width="100%" alt="Original 6"></td>
     <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/16b-1024px.png" width="100%" alt="SPCA 6"></td>
   </tr>
@@ -158,7 +158,7 @@ Local/client use OK; no public SaaS redistribution.
     <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/35a-1024px.png" width="100%" alt="Original 19"></td>
     <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/35b-1024px.png" width="100%" alt="SPCA 19"></td>
     <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/28a-1024px.png" width="100%" alt="Original 20"></td>
-    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/28b-1024px.png" width="100%" alt="SPCA 20"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/28b-1024px.png?id-1" width="100%" alt="SPCA 20"></td>
   </tr>
 </table>
 
@@ -179,7 +179,7 @@ Local/client use OK; no public SaaS redistribution.
     <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/39b-1024px.png" width="100%" alt="SPCA 22"></td>
   </tr>
   <tr>
-    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/37a-1024px.png" width="100%" alt="Original 23"></td>
+    <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/37a-1024px.png?id=1" width="100%" alt="Original 23"></td>
     <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/37b-1024px.png" width="100%" alt="SPCA 23"></td>
     <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/40a-1024px.png" width="100%" alt="Original 24"></td>
     <td><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/40b-1024px.png" width="100%" alt="SPCA 24"></td>
