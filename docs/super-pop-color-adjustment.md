@@ -4,8 +4,12 @@
 
 Bring the **SuperBeasts “pop”** to any image in one click using a new custom residual color correction model trained to push **vibrant palette, deep blacks, crisp highlights, and HDR bite** with ease.
 
-<a href="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/SuperBeasts.AI-SuperPopColorAdjustment.json" target="_blank"><img src="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/workflow.jpg"/></a>
-<a href="https://s3.ap-southeast-2.amazonaws.com/superbeasts.ai/repos/ComfyUI-SuperBeasts/images/samples/SuperBeasts.AI-SuperPopColorAdjustment.json" target="_blank">Download the ComfyUI Workflow</a>.
+<a href="Workflows/SPCA-Standard.png" target="_blank"><img src="Workflows/SPCA-Standard.png"/></a>
+<a href="Workflows/SPCA-Standard.png">Download the Standard ComfyUI Workflow (Save the image and drag into ComfyUI)</a>.
+
+<a href="Workflows/SPCA-ColorRangesWithCorrections.png" target="_blank"><img src="Workflows/SPCA-ColorRangesWithCorrections.png"/></a>
+<a href="Workflows/SPCA-ColorRangesWithCorrections.png" target="_blank">Download the experimental Color Range corrections ComfyUI Workflow (Save the image and drag into ComfyUI)</a>.
+
 
 ### Why I built it
 Everything I post gets graded: lift blacks, pull whites, bend curves, punch colour. Existing auto tools (and many AI outputs — looking at you, muddy yellow “whites”) just weren’t landing, especially across batches or iterative generations. Training my own lightweight correction model let me reclaim hours of post and lock in a consistent SuperBeasts look I could reuse — and share.
@@ -21,13 +25,13 @@ Happy generating!!
 
 ### Using Super Pop
 
-Before starting please review the <a href="https://github.com/SuperBeastsAI/SuperBeastsAI-Models/blob/main/SuperPopColorAdjustment/LICENSE.txt" target="_blank">the licence</a> and [System Requirements](#System-Requirements) to run onnx models.
+Before starting please review the <a href="https://github.com/SuperBeastsAI/SuperBeastsAI-Models/blob/main/SuperPopColorAdjustment/LICENSE.txt" target="_blank">the licence</a> and [System Requirements](#System-Requirements).
 
 1. Add **SB Load Model (SuperBeasts.AI)** node.
 2. Pick **SuperPopColorAdjustment/latest**. (Now from V2 using .safetensors)
-3a. Connect to **Super Pop Color Adjustment (SuperBeasts.AI)** node.
-3b. Input source image and tune *Max Strength*, *Count*, *Overlap* (recommendations below)
-4. Optional - Use the **Super Pop Residual Blend (SuperBeasts.AI)** for full control of the strength. (Useful to experiement with strength settings without repeat runs of the model)
+3. Connect to **Super Pop Color Adjustment (SuperBeasts.AI)** node.
+4. Input source image and tune *Max Strength*, *Count*, *Overlap* (recommendations below)
+5. Optional - Use the **Super Pop Residual Blend (SuperBeasts.AI)** for full control of the strength. (Useful to experiement with strength settings without repeat runs of the model)
 
 **Auto model weight download:**
 Weights are automatically downloaded the first time the **SB Load Model** node runs using a specific version or 'latest'.
@@ -200,8 +204,8 @@ Local/client use OK; no public SaaS redistribution.
 
 ### How it works
 
-1. **SB Load Model** node loads the ONNX-formatted colour-adjustment network
-    (`models/SuperBeasts_ColorAdjustment_512px_V1.onnx`).
+1. **SB Load Model** node loads the model 
+    (`models/SuperBeasts_ColorAdjustment_512px_V2.safetensors`).
 2. The model analyses the image in 512 × 512 patches, predicting a residual colour grade.
 3. Patches are seamlessly stitched back with configurable **strength**, **count** (variant
     batching) and **overlap** for large-resolution output.

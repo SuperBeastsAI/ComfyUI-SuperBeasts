@@ -54,7 +54,7 @@ _MODEL_REGISTRY: dict[str, dict[str, str]] = {
 # ---------------------------------------------------------------------------
 # Known SHA-256 digests for published weight files.  This allows us to verify
 # that a downloaded (or pre-existing) file has not been tampered with.  When
-# a file’s entry is missing we skip verification so development models can be
+# a file's entry is missing we skip verification so development models can be
 # iterated quickly – but **release** models **should always** have a digest.
 # ---------------------------------------------------------------------------
 
@@ -95,7 +95,7 @@ def _latest_version(family: str) -> str:
     versions = list(_MODEL_REGISTRY.get(family, {}).keys())
     if not versions:
         raise ValueError(f"Unknown model family: {family}")
-    # assume semantic ‘vX.Y’ strings – sort lexically
+    # assume semantic ‘vX.Y' strings – sort lexically
     return sorted(versions)[-1]
 
 
@@ -1584,7 +1584,16 @@ class SuperPopResidualBlend:
             img = img_t.squeeze().clamp(0,1)
             res = res_t.squeeze()
 
-            blended = (img + res * strength).clamp(0,1)
+            # Quantise the source to 8-bit – SuperPopColorAdjustment converted the
+            # original tensor to PIL (uint8) before computing residuals.  Without
+            # replicating that rounding we would blend residuals into a higher-
+            # precision version of the source, leading to small but noticeable
+            # mismatches (especially at strength = 1.0).  By rounding to the
+            # same 0–255 integer grid first we guarantee that
+            #   original + residual == corrected
+            img_q = (img * 255.0).round().div(255.0)
+
+            blended = (img_q + res * strength).clamp(0,1)
 
             # Restore missing channel dimension if blend lost it (should stay (C,H,W))
             if blended.ndim == 2:
