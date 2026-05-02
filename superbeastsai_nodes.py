@@ -650,7 +650,8 @@ def _f_lab_to_xyz(t):
 
 
 def _rgb_to_lab_components(img: Image.Image):
-    rgb_u8 = np.ascontiguousarray(np.asarray(img.convert('RGB'), dtype=np.uint8))
+    rgb_img = img if img.mode == 'RGB' else img.convert('RGB')
+    rgb_u8 = np.ascontiguousarray(np.asarray(rgb_img, dtype=np.uint8))
     if rgb_u8.ndim != 3 or rgb_u8.shape[2] != 3:
         raise ValueError(f"Expected RGB image array with shape HxWx3, got {rgb_u8.shape}")
 
@@ -683,11 +684,11 @@ def _rgb_to_lab_components(img: Image.Image):
         fy = _f_xyz_to_lab(y)
         fz = _f_xyz_to_lab(z)
 
-        l = (np.float32(116.0) * fy) - np.float32(16.0)
+        lightness = (np.float32(116.0) * fy) - np.float32(16.0)
         a = np.float32(500.0) * (fx - fy)
         b = np.float32(200.0) * (fy - fz)
 
-        l_uint8[y0:y1] = np.clip(l * (255.0 / 100.0), 0, 255).astype(np.uint8)
+        l_uint8[y0:y1] = np.clip(lightness * (255.0 / 100.0), 0, 255).astype(np.uint8)
         a_out[y0:y1] = a.astype(np.float32, copy=False)
         b_out[y0:y1] = b.astype(np.float32, copy=False)
 
@@ -736,8 +737,8 @@ def _lab_components_to_rgb(l_uint8: np.ndarray, a: np.ndarray, b: np.ndarray) ->
     for y0 in range(0, height, rows_per_chunk):
         y1 = min(height, y0 + rows_per_chunk)
 
-        l = l_uint8[y0:y1].astype(np.float32, copy=False) * (100.0 / 255.0)
-        fy = (l + 16.0) / 116.0
+        lightness = l_uint8[y0:y1].astype(np.float32, copy=False) * (100.0 / 255.0)
+        fy = (lightness + 16.0) / 116.0
         fx = a[y0:y1] / 500.0 + fy
         fz = fy - b[y0:y1] / 200.0
 
