@@ -305,6 +305,19 @@ class SBLoadModel:
         return evicted
 
     @classmethod
+    def unload_model(cls, cache_key: str) -> bool:
+        """Explicitly unload one cached model entry by cache key."""
+        with cls._cache_lock:
+            model_info = cls._model_cache.pop(cache_key, None)
+            cls._init_locks.pop(cache_key, None)
+        if model_info is None:
+            print(f"[SuperBeasts] Cache key not found for unload: {cache_key}")
+            return False
+        cls._cleanup_cached_model(cache_key, model_info)
+        gc.collect()
+        return True
+
+    @classmethod
     def INPUT_TYPES(cls):
         models_dir = os.path.join(os.path.dirname(__file__), 'models')
         available = _discover_sb_models(models_dir)
@@ -1794,6 +1807,8 @@ class SuperPopColorAdjustment:
 
             # Release large per-frame temporaries before the next iteration.
             del original_pil, ctx_np_global, residual_acc, counter, orig_np_full, residual_full, weight_full
+            # For long batches this improves prompt-to-prompt memory stability.
+            gc.collect()
 
         # ------------------------------------------------------------------
         # Finalise outputs – convert accumulated lists to batched tensors and
