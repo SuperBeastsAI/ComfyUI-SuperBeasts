@@ -604,11 +604,13 @@ class SBLoadModel:
             session_inputs = session.get_inputs()
             input_names = [i.name for i in session_inputs]
             input_shapes = [i.shape for i in session_inputs]
+            output_shapes = [o.shape for o in session.get_outputs()]
 
             model_info = {
                 "session": session,
                 "input_names": input_names,
                 "input_shapes": input_shapes,
+                "output_shapes": output_shapes,
                 "patch_size": patch_size,
                 "path": model_path,
                 "type": "onnx",
@@ -1434,6 +1436,7 @@ class SuperPopColorAdjustment:
                 session: ort.InferenceSession = sb_model_info["session"]
                 input_names: List[str] = sb_model_info["input_names"]
                 input_shapes = sb_model_info.get("input_shapes")
+                output_shapes = sb_model_info.get("output_shapes")
 
                 # Prepare inputs (NHWC float32)
                 ctx_np_batch = ctx_np_local[np.newaxis, ...]  # add batch dim
@@ -1442,14 +1445,25 @@ class SuperPopColorAdjustment:
                 tile_np = tile_np[np.newaxis, ...]
 
                 # Some exported models keep NHWC; others are converted to NCHW. Detect by checking input shape channels position.
+                def shape_is_nchw(shape, expected_channels: int) -> bool:
+                    if not isinstance(shape, (list, tuple)) or len(shape) != 4:
+                        return False
+                    c_first = shape[1]
+                    c_last = shape[3]
+                    first_matches = isinstance(c_first, (int, np.integer)) and int(c_first) == expected_channels
+                    last_matches = isinstance(c_last, (int, np.integer)) and int(c_last) == expected_channels
+                    return first_matches and not last_matches
+
                 def maybe_transpose(inp: np.ndarray, shape) -> np.ndarray:
-                    # shape may have None for batch, use length check
-                    if len(shape) == 4 and shape[1] == 3:  # likely NCHW
+                    expected_channels = int(inp.shape[-1])
+                    if shape_is_nchw(shape, expected_channels):
                         return np.transpose(inp, (0, 3, 1, 2))
                     return inp  # assume NHWC
 
                 if input_shapes is None:
                     input_shapes = [i.shape for i in session.get_inputs()]
+                if output_shapes is None:
+                    output_shapes = [o.shape for o in session.get_outputs()]
 
                 tile_ready = maybe_transpose(tile_np, input_shapes[0])
                 ctx_ready = maybe_transpose(ctx_np_batch, input_shapes[1])
@@ -1461,7 +1475,15 @@ class SuperPopColorAdjustment:
 
                 with run_lock:
                     pred_residual = session.run(None, ort_inputs)[0]
-                if pred_residual.shape[1] == 3 and pred_residual.ndim == 4:  # NCHW output
+                expected_output_channels = int(np.asarray(pil_image).shape[-1])
+                output_shape = output_shapes[0] if output_shapes else None
+                if pred_residual.ndim == 4 and shape_is_nchw(output_shape, expected_output_channels):
+                    pred_residual = np.transpose(pred_residual, (0, 2, 3, 1))
+                elif (
+                    pred_residual.ndim == 4
+                    and pred_residual.shape[1] == expected_output_channels
+                    and pred_residual.shape[-1] != expected_output_channels
+                ):
                     pred_residual = np.transpose(pred_residual, (0, 2, 3, 1))
                 residual_np = pred_residual[0]
 
