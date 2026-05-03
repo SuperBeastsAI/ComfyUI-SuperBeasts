@@ -14,6 +14,7 @@ import sys
 import threading
 import contextlib
 import gc
+from collections import OrderedDict
 
 
 # Use importlib to probe for the optional global `config` module without triggering static
@@ -261,8 +262,47 @@ class SBLoadModel:
     # Shown in ComfyUI when the user clicks the "?" icon on the node title-bar.
     DESCRIPTION = __doc__
 
-    _model_cache: Dict[str, Dict[str, Any]] = {}
+    _model_cache: "OrderedDict[str, Dict[str, Any]]" = OrderedDict()
     _cache_lock = threading.RLock()
+    _init_locks: Dict[str, threading.Lock] = {}
+
+    @classmethod
+    def _cache_limit(cls) -> int:
+        raw = os.environ.get("SUPERBEASTS_MODEL_CACHE_MAX", "4")
+        try:
+            return max(1, int(raw))
+        except ValueError:
+            print(f"[SuperBeasts] Warning: invalid SUPERBEASTS_MODEL_CACHE_MAX={raw!r}; using 4")
+            return 4
+
+    @classmethod
+    def _cleanup_cached_model(cls, cache_key: str, model_info: Dict[str, Any]) -> None:
+        model_obj = model_info.get("model")
+        if model_obj is not None and hasattr(model_obj, "to"):
+            try:
+                model_obj.to("cpu")
+            except Exception:
+                pass
+
+        session_obj = model_info.get("session")
+        close_fn = getattr(session_obj, "close", None) if session_obj is not None else None
+        if callable(close_fn):
+            try:
+                close_fn()
+            except Exception:
+                pass
+
+        print(f"[SuperBeasts] Evicted cached model: {cache_key}")
+
+    @classmethod
+    def _evict_lru_locked(cls) -> List[tuple]:
+        evicted = []
+        limit = cls._cache_limit()
+        while len(cls._model_cache) > limit:
+            old_key, old_model = cls._model_cache.popitem(last=False)
+            cls._init_locks.pop(old_key, None)
+            evicted.append((old_key, old_model))
+        return evicted
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -422,13 +462,6 @@ class SBLoadModel:
                     # Non-critical: metadata missing – warn once.
                     print(f"[SuperBeasts] Warning: metadata file not found for {_meta_filename}")
 
-        # --- Security: check SHA-256 digest (raises if mismatch) ---
-        try:
-            _verify_model_checksum(model_path)
-        except Exception as _ck_err:
-            # Surface early so users see a clear error in ComfyUI
-            raise
-
         # Use a device-aware cache key.  The old model_path-only key could return
         # a CPU session/module after the user selected GPU, or vice versa, and it
         # also had no synchronization around shared native runtime objects.
@@ -436,219 +469,247 @@ class SBLoadModel:
         with self._cache_lock:
             cached_model = self._model_cache.get(cache_key)
             if cached_model is not None:
+                self._model_cache.move_to_end(cache_key)
                 return (cached_model, )
+            init_lock = self._init_locks.get(cache_key)
+            if init_lock is None:
+                init_lock = threading.Lock()
+                self._init_locks[cache_key] = init_lock
 
-        # We defer importing onnxruntime unless we end up loading an ONNX model
-        ort = None  # type: ignore[assignment]
+        # Serialize costly cache-miss initialization (checksum/load/session creation) per key.
+        with init_lock:
+            with self._cache_lock:
+                cached_model = self._model_cache.get(cache_key)
+                if cached_model is not None:
+                    self._model_cache.move_to_end(cache_key)
+                    return (cached_model, )
 
-        # Optionally set device context
-        dev_ctx = None
-        if device == "GPU":
-            dev_ctx = "/GPU:0"
-        elif device == "CPU":
-            dev_ctx = "/CPU:0"
-
-        # Determine patch size from filename
-        patch_size = self._parse_patch_size(filename)
-
-        # --------------------------------------------------------------
-        # 1. TorchScript checkpoint – no external architecture required
-        # --------------------------------------------------------------
-        if model_path.lower().endswith('.pt'):
-            import torch
-
-            device_str = 'cuda' if device == 'GPU' and torch.cuda.is_available() else 'cpu'
-
+            # --- Security: check SHA-256 digest (raises if mismatch) ---
             try:
-                model_pt = torch.jit.load(model_path, map_location=device_str)
-            except Exception as e:
-                raise RuntimeError(f"Failed to load TorchScript model: {e}")
+                _verify_model_checksum(model_path)
+            except Exception:
+                # Surface early so users see a clear error in ComfyUI
+                raise
 
-            model_pt.eval()
+            # We defer importing onnxruntime unless we end up loading an ONNX model
+            ort = None  # type: ignore[assignment]
 
-            model_info = {
-                "model": model_pt,
-                "device": device_str,
-                "patch_size": patch_size,
-                "type": "torchscript",
-                "lock": threading.RLock(),
-            }
+            # Optionally set device context
+            dev_ctx = None
+            if device == "GPU":
+                dev_ctx = "/GPU:0"
+            elif device == "CPU":
+                dev_ctx = "/CPU:0"
 
-        # --------------------------------------------------------------
-        # 2. Safetensors + Python architecture (requires contextual_residual_unet_v4.py)
-        # --------------------------------------------------------------
-        elif model_path.lower().endswith('.safetensors'):
-            import torch
-            from safetensors.torch import load_file as safe_load
-            import importlib.util, sys, pathlib
-            model_dir = pathlib.Path(__file__).parent / 'torch_models'
-            model_dir.mkdir(exist_ok=True)
+            # Determine patch size from filename
+            patch_size = self._parse_patch_size(filename)
 
-            # ------------------------------------------------------------------
-            # Ensure architecture implementation file is present – download on
-            # demand if missing so repo stays lean for users who only use ONNX.
-            # ------------------------------------------------------------------
-            arch_filename = 'contextual_residual_unet_v4_pt.py'
-            module_path = (model_dir / arch_filename).resolve()
-            if not module_path.exists():
+            # --------------------------------------------------------------
+            # 1. TorchScript checkpoint – no external architecture required
+            # --------------------------------------------------------------
+            if model_path.lower().endswith('.pt'):
+                import torch
+
+                device_str = 'cuda' if device == 'GPU' and torch.cuda.is_available() else 'cpu'
+
                 try:
-                    rel_path_arch = f"{family}/TorchModel/{arch_filename}"
-                    _download_remote_model(rel_path_arch, str(module_path))
+                    model_pt = torch.jit.load(model_path, map_location=device_str)
                 except Exception as e:
-                    raise RuntimeError(
-                        "Required architecture file was not found locally and automatic download failed.\n" + str(e)
-                    )
-
-            # ------------------------------------------------------------------
-            # Safety guard – ensure we never import a file outside our plugin dir
-            # even if the relative path is somehow manipulated.
-            # ------------------------------------------------------------------
-
-            allowed_root = model_dir.resolve()
-            if not str(module_path).startswith(str(allowed_root)):
-                raise RuntimeError("Blocked unsafe module import: path escapes plugin directory")
-
-            sys.path.append(str(model_dir))
-            spec = importlib.util.spec_from_file_location('contextual_residual_unet_v4_pt', module_path)
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)  # type: ignore
-            ContextualResidualUNetV4Torch = module.ContextualResidualUNetV4Torch
-
-            device_str = 'cuda' if device == 'GPU' and torch.cuda.is_available() else 'cpu'
-
-            # Prefer TorchScript if it exists next to the safetensors
-            base_no_ext = os.path.splitext(model_path)[0]
-            pt_path_candidates = [base_no_ext + '.pt', base_no_ext + '_scripted.pt']
-            pt_path = next((p for p in pt_path_candidates if os.path.isfile(p)), None)
-            if pt_path and os.path.isfile(pt_path):
-                try:
-                    model_pt = torch.jit.load(pt_path, map_location=device_str)
-                    model_pt.eval()
-                except Exception as e:
-                    raise RuntimeError(f"Failed to load TorchScript companion file {pt_path}: {e}")
-            else:
-                # Fall back to python architecture + direct state_dict load (legacy path)
-                model_pt = ContextualResidualUNetV4Torch()
-
-                state_in = safe_load(model_path, device='cpu')
-                try:
-                    model_pt.load_state_dict(state_in, strict=True)
-                except Exception as e:
-                    raise RuntimeError("Checkpoint did not match architecture and no .pt file found. "
-                                       "Convert the model to TorchScript to avoid mismatches.\n" + str(e))
+                    raise RuntimeError(f"Failed to load TorchScript model: {e}")
 
                 model_pt.eval()
 
-            model_info = {
-                "model": model_pt,
-                "device": device_str,
-                "patch_size": patch_size,
-                "type": "torch",
-                "lock": threading.RLock(),
-            }
+                model_info = {
+                    "model": model_pt,
+                    "device": device_str,
+                    "patch_size": patch_size,
+                    "type": "torchscript",
+                    "lock": threading.RLock(),
+                }
 
-        # Load ONNX with onnxruntime (import lazily so safetensors users don't need it)
-        else:
-            if ort is None:
-                try:
-                    import onnxruntime as ort  # type: ignore
-                except Exception as e:
-                    raise RuntimeError(
-                        "onnxruntime is required for SuperBeasts ONNX models. Install with:\n"
-                        " pip install onnxruntime-gpu  # (or onnxruntime for CPU)\n\n" + str(e)
-                    )
+            # --------------------------------------------------------------
+            # 2. Safetensors + Python architecture (requires contextual_residual_unet_v4.py)
+            # --------------------------------------------------------------
+            elif model_path.lower().endswith('.safetensors'):
+                import torch
+                from safetensors.torch import load_file as safe_load
+                import importlib.util, sys, pathlib
+                model_dir = pathlib.Path(__file__).parent / 'torch_models'
+                model_dir.mkdir(exist_ok=True)
 
-            providers: List[str]
-            avail_prov = ort.get_available_providers()
-            print(f"[SuperBeasts] ONNX Runtime providers available: {avail_prov}")
-            cuda_available = 'CUDAExecutionProvider' in avail_prov
-            dml_available = 'DmlExecutionProvider' in avail_prov
+                # ------------------------------------------------------------------
+                # Ensure architecture implementation file is present – download on
+                # demand if missing so repo stays lean for users who only use ONNX.
+                # ------------------------------------------------------------------
+                arch_filename = 'contextual_residual_unet_v4_pt.py'
+                module_path = (model_dir / arch_filename).resolve()
+                if not module_path.exists():
+                    try:
+                        rel_path_arch = f"{family}/TorchModel/{arch_filename}"
+                        _download_remote_model(rel_path_arch, str(module_path))
+                    except Exception as e:
+                        raise RuntimeError(
+                            "Required architecture file was not found locally and automatic download failed.\n" + str(e)
+                        )
 
-            chosen_provider = 'CPUExecutionProvider'
+                # ------------------------------------------------------------------
+                # Safety guard – ensure we never import a file outside our plugin dir
+                # even if the relative path is somehow manipulated.
+                # ------------------------------------------------------------------
+                allowed_root = model_dir.resolve()
+                if not str(module_path).startswith(str(allowed_root)):
+                    raise RuntimeError("Blocked unsafe module import: path escapes plugin directory")
 
-            if device == "GPU":
-                if cuda_available:
-                    chosen_provider = 'CUDAExecutionProvider'
-                elif dml_available:
-                    chosen_provider = 'DmlExecutionProvider'
-            elif device == "AUTO":
-                if cuda_available:
-                    chosen_provider = 'CUDAExecutionProvider'
-                elif dml_available:
-                    chosen_provider = 'DmlExecutionProvider'
+                sys.path.append(str(model_dir))
+                spec = importlib.util.spec_from_file_location('contextual_residual_unet_v4_pt', module_path)
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)  # type: ignore
+                ContextualResidualUNetV4Torch = module.ContextualResidualUNetV4Torch
 
-            if chosen_provider != 'CPUExecutionProvider':
-                providers = [chosen_provider, 'CPUExecutionProvider']
+                device_str = 'cuda' if device == 'GPU' and torch.cuda.is_available() else 'cpu'
+
+                # Prefer TorchScript if it exists next to the safetensors
+                base_no_ext = os.path.splitext(model_path)[0]
+                pt_path_candidates = [base_no_ext + '.pt', base_no_ext + '_scripted.pt']
+                pt_path = next((p for p in pt_path_candidates if os.path.isfile(p)), None)
+                if pt_path and os.path.isfile(pt_path):
+                    try:
+                        model_pt = torch.jit.load(pt_path, map_location=device_str)
+                        model_pt.eval()
+                    except Exception as e:
+                        raise RuntimeError(f"Failed to load TorchScript companion file {pt_path}: {e}")
+                else:
+                    # Fall back to python architecture + direct state_dict load (legacy path)
+                    model_pt = ContextualResidualUNetV4Torch()
+
+                    state_in = safe_load(model_path, device='cpu')
+                    try:
+                        model_pt.load_state_dict(state_in, strict=True)
+                    except Exception as e:
+                        raise RuntimeError(
+                            "Checkpoint did not match architecture and no .pt file found. "
+                            "Convert the model to TorchScript to avoid mismatches.\n" + str(e)
+                        )
+
+                    model_pt.eval()
+
+                model_info = {
+                    "model": model_pt,
+                    "device": device_str,
+                    "patch_size": patch_size,
+                    "type": "torch",
+                    "lock": threading.RLock(),
+                }
+
+            # Load ONNX with onnxruntime (import lazily so safetensors users don't need it)
             else:
-                providers = ['CPUExecutionProvider']
+                if ort is None:
+                    try:
+                        import onnxruntime as ort  # type: ignore
+                    except Exception as e:
+                        raise RuntimeError(
+                            "onnxruntime is required for SuperBeasts ONNX models. Install with:\n"
+                            " pip install onnxruntime-gpu  # (or onnxruntime for CPU)\n\n" + str(e)
+                        )
 
-            print(f"[SuperBeasts] Using ORT providers: {providers}")
+                providers: List[str]
+                avail_prov = ort.get_available_providers()
+                print(f"[SuperBeasts] ONNX Runtime providers available: {avail_prov}")
+                cuda_available = 'CUDAExecutionProvider' in avail_prov
+                dml_available = 'DmlExecutionProvider' in avail_prov
 
-            # Create session.  Keep ORT's per-session CPU thread pools bounded;
-            # ComfyUI already runs alongside PyTorch and other native extensions,
-            # and unbounded ORT pools can stall the prompt worker under repeated
-            # node execution.
-            session_opts = ort.SessionOptions()
-            session_opts.log_severity_level = 3  # suppress info logs
+                chosen_provider = 'CPUExecutionProvider'
 
-            def _safe_env_threads(name: str, default: int = 1) -> int:
-                raw = os.environ.get(name, str(default))
+                if device == "GPU":
+                    if cuda_available:
+                        chosen_provider = 'CUDAExecutionProvider'
+                    elif dml_available:
+                        chosen_provider = 'DmlExecutionProvider'
+                elif device == "AUTO":
+                    if cuda_available:
+                        chosen_provider = 'CUDAExecutionProvider'
+                    elif dml_available:
+                        chosen_provider = 'DmlExecutionProvider'
+
+                if chosen_provider != 'CPUExecutionProvider':
+                    providers = [chosen_provider, 'CPUExecutionProvider']
+                else:
+                    providers = ['CPUExecutionProvider']
+
+                print(f"[SuperBeasts] Using ORT providers: {providers}")
+
+                # Create session.  Keep ORT's per-session CPU thread pools bounded;
+                # ComfyUI already runs alongside PyTorch and other native extensions,
+                # and unbounded ORT pools can stall the prompt worker under repeated
+                # node execution.
+                session_opts = ort.SessionOptions()
+                session_opts.log_severity_level = 3  # suppress info logs
+
+                def _safe_env_threads(name: str, default: int = 1) -> int:
+                    raw = os.environ.get(name, str(default))
+                    try:
+                        return max(1, int(raw))
+                    except ValueError:
+                        print(f"[SuperBeasts] Warning: invalid {name}={raw!r}; using {default}")
+                        return default
+
+                intra_threads = _safe_env_threads("SUPERBEASTS_ORT_INTRA_THREADS", 1)
+                inter_threads = _safe_env_threads("SUPERBEASTS_ORT_INTER_THREADS", 1)
+
                 try:
-                    return max(1, int(raw))
-                except ValueError:
-                    print(f"[SuperBeasts] Warning: invalid {name}={raw!r}; using {default}")
-                    return default
+                    session_opts.intra_op_num_threads = intra_threads
+                except Exception:
+                    # Older ORT builds may not expose this option.
+                    pass
+                try:
+                    session_opts.inter_op_num_threads = inter_threads
+                except Exception:
+                    # Older ORT builds may not expose this option.
+                    pass
+                try:
+                    session_opts.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
+                except Exception:
+                    # Older ORT builds may not expose this option.
+                    pass
 
-            intra_threads = _safe_env_threads("SUPERBEASTS_ORT_INTRA_THREADS", 1)
-            inter_threads = _safe_env_threads("SUPERBEASTS_ORT_INTER_THREADS", 1)
+                session = ort.InferenceSession(model_path, session_options=session_opts, providers=providers)
 
-            try:
-                session_opts.intra_op_num_threads = intra_threads
-            except Exception:
-                # Older ORT builds may not expose this option.
-                pass
-            try:
-                session_opts.inter_op_num_threads = inter_threads
-            except Exception:
-                # Older ORT builds may not expose this option.
-                pass
-            try:
-                session_opts.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
-            except Exception:
-                # Older ORT builds may not expose this option.
-                pass
+                session_inputs = session.get_inputs()
+                input_names = [i.name for i in session_inputs]
+                input_shapes = [i.shape for i in session_inputs]
+                output_shapes = [o.shape for o in session.get_outputs()]
 
-            session = ort.InferenceSession(model_path, session_options=session_opts, providers=providers)
+                model_info = {
+                    "session": session,
+                    "input_names": input_names,
+                    "input_shapes": input_shapes,
+                    "output_shapes": output_shapes,
+                    "patch_size": patch_size,
+                    "path": model_path,
+                    "type": "onnx",
+                    "lock": threading.RLock(),
+                }
 
-            session_inputs = session.get_inputs()
-            input_names = [i.name for i in session_inputs]
-            input_shapes = [i.shape for i in session_inputs]
-            output_shapes = [o.shape for o in session.get_outputs()]
+            # Attach metadata path if we fetched it earlier
+            if '_meta_path' in locals() and os.path.isfile(_meta_path):
+                model_info["metadata_path"] = _meta_path
 
-            model_info = {
-                "session": session,
-                "input_names": input_names,
-                "input_shapes": input_shapes,
-                "output_shapes": output_shapes,
-                "patch_size": patch_size,
-                "path": model_path,
-                "type": "onnx",
-                "lock": threading.RLock(),
-            }
+            evicted_models = []
+            # Cache and return.  If another prompt loaded the same model while this
+            # call was initializing, reuse the first object so all executions share
+            # one lock-protected backend instance.
+            with self._cache_lock:
+                cached_model = self._model_cache.get(cache_key)
+                if cached_model is not None:
+                    self._model_cache.move_to_end(cache_key)
+                    return (cached_model, )
+                self._model_cache[cache_key] = model_info
+                self._model_cache.move_to_end(cache_key)
+                evicted_models = self._evict_lru_locked()
 
-        # Attach metadata path if we fetched it earlier
-        if '_meta_path' in locals() and os.path.isfile(_meta_path):
-            model_info["metadata_path"] = _meta_path
-        
-        # Cache and return.  If another prompt loaded the same model while this
-        # call was initializing, reuse the first object so all executions share
-        # one lock-protected backend instance.
-        with self._cache_lock:
-            cached_model = self._model_cache.get(cache_key)
-            if cached_model is not None:
-                return (cached_model, )
-            self._model_cache[cache_key] = model_info
-        return (model_info, )
+            for evicted_key, evicted_model in evicted_models:
+                self._cleanup_cached_model(evicted_key, evicted_model)
+            return (model_info, )
 
 
 # Tensor to PIL
@@ -1730,6 +1791,9 @@ class SuperPopColorAdjustment:
             # Update progress bar
             if pbar is not None:
                 pbar.update_absolute(idx + 1)
+
+            # Release large per-frame temporaries before the next iteration.
+            del original_pil, ctx_np_global, residual_acc, counter, orig_np_full, residual_full, weight_full
 
         # ------------------------------------------------------------------
         # Finalise outputs – convert accumulated lists to batched tensors and
