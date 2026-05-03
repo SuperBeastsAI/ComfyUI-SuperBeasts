@@ -281,16 +281,16 @@ class SBLoadModel:
         if model_obj is not None and hasattr(model_obj, "to"):
             try:
                 model_obj.to("cpu")
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"[SuperBeasts] Warning: cleanup model.to('cpu') failed for {cache_key}: {e}")
 
         session_obj = model_info.get("session")
         close_fn = getattr(session_obj, "close", None) if session_obj is not None else None
         if callable(close_fn):
             try:
                 close_fn()
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"[SuperBeasts] Warning: cleanup session.close() failed for {cache_key}: {e}")
 
         print(f"[SuperBeasts] Evicted cached model: {cache_key}")
 
@@ -313,8 +313,13 @@ class SBLoadModel:
         if model_info is None:
             print(f"[SuperBeasts] Cache key not found for unload: {cache_key}")
             return False
-        cls._cleanup_cached_model(cache_key, model_info)
-        gc.collect()
+        model_lock = model_info.get("lock")
+        if model_lock is not None:
+            with model_lock:
+                model_info["_pending_dispose"] = True
+        else:
+            model_info["_pending_dispose"] = True
+        print(f"[SuperBeasts] Removed cache entry (deferred disposal): {cache_key}")
         return True
 
     @classmethod
@@ -475,10 +480,46 @@ class SBLoadModel:
                     # Non-critical: metadata missing – warn once.
                     print(f"[SuperBeasts] Warning: metadata file not found for {_meta_filename}")
 
-        # Use a device-aware cache key.  The old model_path-only key could return
-        # a CPU session/module after the user selected GPU, or vice versa, and it
-        # also had no synchronization around shared native runtime objects.
-        cache_key = f"{os.path.abspath(model_path)}|{device.upper()}"
+        # Resolve backend identity before keying cache so equivalent UI choices
+        # (e.g. AUTO vs CPU when only CPU is available) share one backend object.
+        model_ext = os.path.splitext(model_path)[1].lower()
+        resolved_torch_device = None
+        resolved_ort_provider = None
+        avail_prov_for_key = None
+        ort_for_key = None
+        if model_ext in ('.pt', '.safetensors'):
+            import torch
+            resolved_torch_device = 'cuda' if device == 'GPU' and torch.cuda.is_available() else 'cpu'
+            resolved_backend = f"TORCH:{resolved_torch_device}"
+        else:
+            try:
+                import onnxruntime as ort_for_key  # type: ignore
+            except Exception as e:
+                raise RuntimeError(
+                    "onnxruntime is required for SuperBeasts ONNX models. Install with:\n"
+                    " pip install onnxruntime-gpu  # (or onnxruntime for CPU)\n\n" + str(e)
+                ) from e
+
+            avail_prov_for_key = ort_for_key.get_available_providers()
+            cuda_available = 'CUDAExecutionProvider' in avail_prov_for_key
+            dml_available = 'DmlExecutionProvider' in avail_prov_for_key
+
+            resolved_ort_provider = 'CPUExecutionProvider'
+            if device == "GPU":
+                if cuda_available:
+                    resolved_ort_provider = 'CUDAExecutionProvider'
+                elif dml_available:
+                    resolved_ort_provider = 'DmlExecutionProvider'
+            elif device == "AUTO":
+                if cuda_available:
+                    resolved_ort_provider = 'CUDAExecutionProvider'
+                elif dml_available:
+                    resolved_ort_provider = 'DmlExecutionProvider'
+            resolved_backend = f"ORT:{resolved_ort_provider}"
+
+        # Use a backend-aware cache key. The old model_path-only key could return
+        # an incompatible backend object after device/provider changes.
+        cache_key = f"{os.path.abspath(model_path)}|{resolved_backend}"
         with self._cache_lock:
             cached_model = self._model_cache.get(cache_key)
             if cached_model is not None:
@@ -505,7 +546,7 @@ class SBLoadModel:
                 raise
 
             # We defer importing onnxruntime unless we end up loading an ONNX model
-            ort = None  # type: ignore[assignment]
+            ort = ort_for_key  # type: ignore[assignment]
 
             # Optionally set device context
             dev_ctx = None
@@ -523,18 +564,20 @@ class SBLoadModel:
             if model_path.lower().endswith('.pt'):
                 import torch
 
-                device_str = 'cuda' if device == 'GPU' and torch.cuda.is_available() else 'cpu'
+                device_str = resolved_torch_device if resolved_torch_device is not None else 'cpu'
 
                 try:
                     model_pt = torch.jit.load(model_path, map_location=device_str)
                 except Exception as e:
-                    raise RuntimeError(f"Failed to load TorchScript model: {e}")
+                    raise RuntimeError(f"Failed to load TorchScript model: {e}") from e
 
                 model_pt.eval()
 
                 model_info = {
                     "model": model_pt,
                     "device": device_str,
+                    "cache_key": cache_key,
+                    "_pending_dispose": False,
                     "patch_size": patch_size,
                     "type": "torchscript",
                     "lock": threading.RLock(),
@@ -563,7 +606,7 @@ class SBLoadModel:
                     except Exception as e:
                         raise RuntimeError(
                             "Required architecture file was not found locally and automatic download failed.\n" + str(e)
-                        )
+                        ) from e
 
                 # ------------------------------------------------------------------
                 # Safety guard – ensure we never import a file outside our plugin dir
@@ -579,7 +622,7 @@ class SBLoadModel:
                 spec.loader.exec_module(module)  # type: ignore
                 ContextualResidualUNetV4Torch = module.ContextualResidualUNetV4Torch
 
-                device_str = 'cuda' if device == 'GPU' and torch.cuda.is_available() else 'cpu'
+                device_str = resolved_torch_device if resolved_torch_device is not None else 'cpu'
 
                 # Prefer TorchScript if it exists next to the safetensors
                 base_no_ext = os.path.splitext(model_path)[0]
@@ -590,7 +633,7 @@ class SBLoadModel:
                         model_pt = torch.jit.load(pt_path, map_location=device_str)
                         model_pt.eval()
                     except Exception as e:
-                        raise RuntimeError(f"Failed to load TorchScript companion file {pt_path}: {e}")
+                        raise RuntimeError(f"Failed to load TorchScript companion file {pt_path}: {e}") from e
                 else:
                     # Fall back to python architecture + direct state_dict load (legacy path)
                     model_pt = ContextualResidualUNetV4Torch()
@@ -602,13 +645,16 @@ class SBLoadModel:
                         raise RuntimeError(
                             "Checkpoint did not match architecture and no .pt file found. "
                             "Convert the model to TorchScript to avoid mismatches.\n" + str(e)
-                        )
+                        ) from e
 
+                    model_pt = model_pt.to(device_str)
                     model_pt.eval()
 
                 model_info = {
                     "model": model_pt,
                     "device": device_str,
+                    "cache_key": cache_key,
+                    "_pending_dispose": False,
                     "patch_size": patch_size,
                     "type": "torch",
                     "lock": threading.RLock(),
@@ -623,26 +669,12 @@ class SBLoadModel:
                         raise RuntimeError(
                             "onnxruntime is required for SuperBeasts ONNX models. Install with:\n"
                             " pip install onnxruntime-gpu  # (or onnxruntime for CPU)\n\n" + str(e)
-                        )
+                        ) from e
 
                 providers: List[str]
-                avail_prov = ort.get_available_providers()
+                avail_prov = avail_prov_for_key if avail_prov_for_key is not None else ort.get_available_providers()
                 print(f"[SuperBeasts] ONNX Runtime providers available: {avail_prov}")
-                cuda_available = 'CUDAExecutionProvider' in avail_prov
-                dml_available = 'DmlExecutionProvider' in avail_prov
-
-                chosen_provider = 'CPUExecutionProvider'
-
-                if device == "GPU":
-                    if cuda_available:
-                        chosen_provider = 'CUDAExecutionProvider'
-                    elif dml_available:
-                        chosen_provider = 'DmlExecutionProvider'
-                elif device == "AUTO":
-                    if cuda_available:
-                        chosen_provider = 'CUDAExecutionProvider'
-                    elif dml_available:
-                        chosen_provider = 'DmlExecutionProvider'
+                chosen_provider = resolved_ort_provider if resolved_ort_provider is not None else 'CPUExecutionProvider'
 
                 if chosen_provider != 'CPUExecutionProvider':
                     providers = [chosen_provider, 'CPUExecutionProvider']
@@ -697,6 +729,8 @@ class SBLoadModel:
                     "input_names": input_names,
                     "input_shapes": input_shapes,
                     "output_shapes": output_shapes,
+                    "cache_key": cache_key,
+                    "_pending_dispose": False,
                     "patch_size": patch_size,
                     "path": model_path,
                     "type": "onnx",
@@ -721,7 +755,13 @@ class SBLoadModel:
                 evicted_models = self._evict_lru_locked()
 
             for evicted_key, evicted_model in evicted_models:
-                self._cleanup_cached_model(evicted_key, evicted_model)
+                evicted_lock = evicted_model.get("lock") if isinstance(evicted_model, dict) else None
+                if evicted_lock is not None:
+                    with evicted_lock:
+                        evicted_model["_pending_dispose"] = True
+                else:
+                    evicted_model["_pending_dispose"] = True
+                print(f"[SuperBeasts] Evicted cache entry (deferred disposal): {evicted_key}")
             return (model_info, )
 
 
@@ -975,8 +1015,15 @@ def apply_to_batch(func):
             return (batch_tensor, )
         finally:
             # Drop per-frame temporary tensors promptly between queued runs.
+            if image is None:
+                image_count = 0
+            elif hasattr(image, "shape"):
+                image_count = int(image.shape[0])
+            else:
+                image_count = len(image)
             images.clear()
-            gc.collect()
+            if image_count > 16:
+                gc.collect()
     return wrapper
 
 class HDREffects:
