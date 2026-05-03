@@ -11,6 +11,9 @@ import urllib.request, pathlib, shutil, tempfile
 from typing import Dict, Any, List
 import importlib.util
 import sys
+import threading
+import contextlib
+import gc
 
 
 # Use importlib to probe for the optional global `config` module without triggering static
@@ -259,6 +262,7 @@ class SBLoadModel:
     DESCRIPTION = __doc__
 
     _model_cache: Dict[str, Dict[str, Any]] = {}
+    _cache_lock = threading.RLock()
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -425,9 +429,14 @@ class SBLoadModel:
             # Surface early so users see a clear error in ComfyUI
             raise
 
-        # Use cache if possible
-        if model_path in self._model_cache:
-            return (self._model_cache[model_path], )
+        # Use a device-aware cache key.  The old model_path-only key could return
+        # a CPU session/module after the user selected GPU, or vice versa, and it
+        # also had no synchronization around shared native runtime objects.
+        cache_key = f"{os.path.abspath(model_path)}|{device.upper()}"
+        with self._cache_lock:
+            cached_model = self._model_cache.get(cache_key)
+            if cached_model is not None:
+                return (cached_model, )
 
         # We defer importing onnxruntime unless we end up loading an ONNX model
         ort = None  # type: ignore[assignment]
@@ -462,6 +471,7 @@ class SBLoadModel:
                 "device": device_str,
                 "patch_size": patch_size,
                 "type": "torchscript",
+                "lock": threading.RLock(),
             }
 
         # --------------------------------------------------------------
@@ -534,6 +544,7 @@ class SBLoadModel:
                 "device": device_str,
                 "patch_size": patch_size,
                 "type": "torch",
+                "lock": threading.RLock(),
             }
 
         # Load ONNX with onnxruntime (import lazily so safetensors users don't need it)
@@ -573,27 +584,49 @@ class SBLoadModel:
 
             print(f"[SuperBeasts] Using ORT providers: {providers}")
 
-            # Create session
+            # Create session.  Keep ORT's per-session CPU thread pools bounded;
+            # ComfyUI already runs alongside PyTorch and other native extensions,
+            # and unbounded ORT pools can stall the prompt worker under repeated
+            # node execution.
             session_opts = ort.SessionOptions()
             session_opts.log_severity_level = 3  # suppress info logs
+            try:
+                session_opts.intra_op_num_threads = max(1, int(os.environ.get("SUPERBEASTS_ORT_INTRA_THREADS", "1")))
+                session_opts.inter_op_num_threads = max(1, int(os.environ.get("SUPERBEASTS_ORT_INTER_THREADS", "1")))
+                session_opts.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
+            except Exception:
+                # Older ORT builds may not expose every option.  Session creation
+                # should not fail just because a hardening option is unavailable.
+                pass
+
             session = ort.InferenceSession(model_path, session_options=session_opts, providers=providers)
 
-            input_names = [i.name for i in session.get_inputs()]
+            session_inputs = session.get_inputs()
+            input_names = [i.name for i in session_inputs]
+            input_shapes = [i.shape for i in session_inputs]
 
             model_info = {
                 "session": session,
                 "input_names": input_names,
+                "input_shapes": input_shapes,
                 "patch_size": patch_size,
                 "path": model_path,
                 "type": "onnx",
+                "lock": threading.RLock(),
             }
 
         # Attach metadata path if we fetched it earlier
         if '_meta_path' in locals() and os.path.isfile(_meta_path):
             model_info["metadata_path"] = _meta_path
         
-        # Cache and return
-        self._model_cache[model_path] = model_info
+        # Cache and return.  If another prompt loaded the same model while this
+        # call was initializing, reuse the first object so all executions share
+        # one lock-protected backend instance.
+        with self._cache_lock:
+            cached_model = self._model_cache.get(cache_key)
+            if cached_model is not None:
+                return (cached_model, )
+            self._model_cache[cache_key] = model_info
         return (model_info, )
 
 
@@ -840,10 +873,15 @@ def apply_gamma_correction(lum_array, gamma):
 def apply_to_batch(func):
     def wrapper(self, image, *args, **kwargs):
         images = []
-        for img in image:
-            images.append(func(self, img, *args, **kwargs))
-        batch_tensor = torch.cat(images, dim=0)
-        return (batch_tensor, )
+        try:
+            for img in image:
+                images.append(func(self, img, *args, **kwargs))
+            batch_tensor = torch.cat(images, dim=0)
+            return (batch_tensor, )
+        finally:
+            # Drop per-frame temporary tensors promptly between queued runs.
+            images.clear()
+            gc.collect()
     return wrapper
 
 class HDREffects:
@@ -1366,8 +1404,11 @@ class SuperPopColorAdjustment:
             else:
                 ctx_np_local = ctx_np
 
+            model_lock = sb_model_info.get("lock") if isinstance(sb_model_info, dict) else None
+            run_lock = model_lock if model_lock is not None else contextlib.nullcontext()
+
             # --- Torch path ---
-            if isinstance(sb_model_info, dict) and sb_model_info.get("type") == "torch":
+            if isinstance(sb_model_info, dict) and sb_model_info.get("type") in {"torch", "torchscript"}:
                 import torch
                 model_pt = sb_model_info["model"]
                 device_str = sb_model_info["device"]
@@ -1375,12 +1416,13 @@ class SuperPopColorAdjustment:
                 # Prepare inputs NCHW float32
                 tile_np = _add_extra_color_channels_np(np.asarray(pil_image, dtype=np.float32) / 255.0)
 
-                tile_t = torch.from_numpy(tile_np.transpose(2,0,1)).unsqueeze(0).to(device_str)
-                ctx_t = torch.from_numpy(ctx_np_local.transpose(2,0,1)).unsqueeze(0).to(device_str)
+                tile_t = torch.from_numpy(np.ascontiguousarray(tile_np.transpose(2,0,1))).unsqueeze(0).to(device_str)
+                ctx_t = torch.from_numpy(np.ascontiguousarray(ctx_np_local.transpose(2,0,1))).unsqueeze(0).to(device_str)
 
-                with torch.no_grad():
-                    residual = model_pt(tile_t, ctx_t)
-                residual_np = residual.squeeze(0).cpu().numpy().transpose(1,2,0)
+                with run_lock:
+                    with torch.inference_mode():
+                        residual = model_pt(tile_t, ctx_t)
+                    residual_np = residual.detach().squeeze(0).cpu().numpy().transpose(1,2,0)
 
                 tile_base = np.asarray(pil_image, dtype=np.float32) / 255.0
                 corrected_np = np.clip(tile_base + residual_np, 0.0, 1.0)
@@ -1391,6 +1433,7 @@ class SuperPopColorAdjustment:
                 import onnxruntime as ort  # type: ignore
                 session: ort.InferenceSession = sb_model_info["session"]
                 input_names: List[str] = sb_model_info["input_names"]
+                input_shapes = sb_model_info.get("input_shapes")
 
                 # Prepare inputs (NHWC float32)
                 ctx_np_batch = ctx_np_local[np.newaxis, ...]  # add batch dim
@@ -1405,15 +1448,19 @@ class SuperPopColorAdjustment:
                         return np.transpose(inp, (0, 3, 1, 2))
                     return inp  # assume NHWC
 
-                tile_ready = maybe_transpose(tile_np, session.get_inputs()[0].shape)
-                ctx_ready = maybe_transpose(ctx_np_batch, session.get_inputs()[1].shape)
+                if input_shapes is None:
+                    input_shapes = [i.shape for i in session.get_inputs()]
+
+                tile_ready = maybe_transpose(tile_np, input_shapes[0])
+                ctx_ready = maybe_transpose(ctx_np_batch, input_shapes[1])
 
                 ort_inputs = {
-                    input_names[0]: tile_ready.astype(np.float32),
-                    input_names[1]: ctx_ready.astype(np.float32),
+                    input_names[0]: np.ascontiguousarray(tile_ready, dtype=np.float32),
+                    input_names[1]: np.ascontiguousarray(ctx_ready, dtype=np.float32),
                 }
 
-                pred_residual = session.run(None, ort_inputs)[0]
+                with run_lock:
+                    pred_residual = session.run(None, ort_inputs)[0]
                 if pred_residual.shape[1] == 3 and pred_residual.ndim == 4:  # NCHW output
                     pred_residual = np.transpose(pred_residual, (0, 2, 3, 1))
                 residual_np = pred_residual[0]
@@ -1550,6 +1597,7 @@ class SuperPopColorAdjustment:
             orig_np_full = np.array(original_pil, dtype=np.float32) / 255.0
 
             # ctx_np_global already prepared above
+            weight_full = self._create_patch_weight_map(patch_size, patch_size, overlap_px)
 
             for y in y_positions:
                 for x in x_positions:
@@ -1610,7 +1658,6 @@ class SuperPopColorAdjustment:
                         residual_patch = corrected_crop - orig_cropped
 
                     # Weight map for smooth blending (same crop)
-                    weight_full = self._create_patch_weight_map(patch_size, patch_size, overlap_px)
                     if target_h != patch_size or target_w != patch_size:
                         weight = weight_full[pad_top:pad_top + target_h, pad_left:pad_left + target_w]
                     else:
@@ -1658,6 +1705,10 @@ class SuperPopColorAdjustment:
             residual_batch = residual_tensors  # keep list per-frame
             filename_prefix_str = "".join(filename_prefixes)
 
+        # Encourage prompt-to-prompt release of large temporary NumPy/PIL objects.
+        # This does not unload cached models; it only reduces repeated-generation
+        # accumulation pressure around this node.
+        gc.collect()
         return (images_batch, filename_prefix_str, residual_batch)
 
 class SuperPopResidualBlend:
