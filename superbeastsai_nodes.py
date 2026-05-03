@@ -590,13 +590,32 @@ class SBLoadModel:
             # node execution.
             session_opts = ort.SessionOptions()
             session_opts.log_severity_level = 3  # suppress info logs
+
+            def _safe_env_threads(name: str, default: int = 1) -> int:
+                raw = os.environ.get(name, str(default))
+                try:
+                    return max(1, int(raw))
+                except ValueError:
+                    print(f"[SuperBeasts] Warning: invalid {name}={raw!r}; using {default}")
+                    return default
+
+            intra_threads = _safe_env_threads("SUPERBEASTS_ORT_INTRA_THREADS", 1)
+            inter_threads = _safe_env_threads("SUPERBEASTS_ORT_INTER_THREADS", 1)
+
             try:
-                session_opts.intra_op_num_threads = max(1, int(os.environ.get("SUPERBEASTS_ORT_INTRA_THREADS", "1")))
-                session_opts.inter_op_num_threads = max(1, int(os.environ.get("SUPERBEASTS_ORT_INTER_THREADS", "1")))
+                session_opts.intra_op_num_threads = intra_threads
+            except Exception:
+                # Older ORT builds may not expose this option.
+                pass
+            try:
+                session_opts.inter_op_num_threads = inter_threads
+            except Exception:
+                # Older ORT builds may not expose this option.
+                pass
+            try:
                 session_opts.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
             except Exception:
-                # Older ORT builds may not expose every option.  Session creation
-                # should not fail just because a hardening option is unavailable.
+                # Older ORT builds may not expose this option.
                 pass
 
             session = ort.InferenceSession(model_path, session_options=session_opts, providers=providers)
