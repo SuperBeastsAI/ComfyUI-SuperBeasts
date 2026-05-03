@@ -650,39 +650,113 @@ def _f_lab_to_xyz(t):
 
 
 def _rgb_to_lab_components(img: Image.Image):
-    rgb = np.asarray(img.convert('RGB'), dtype=np.float32) / 255.0
-    linear_rgb = _srgb_to_linear(rgb)
-    xyz = linear_rgb @ _SRGB_TO_XYZ.T
-    xyz = xyz / _D65_WHITE
+    rgb_img = img if img.mode == 'RGB' else img.convert('RGB')
+    rgb_u8 = np.ascontiguousarray(np.asarray(rgb_img, dtype=np.uint8))
+    if rgb_u8.ndim != 3 or rgb_u8.shape[2] != 3:
+        raise ValueError(f"Expected RGB image array with shape HxWx3, got {rgb_u8.shape}")
 
-    f_xyz = _f_xyz_to_lab(xyz)
-    l = (116.0 * f_xyz[..., 1]) - 16.0
-    a = 500.0 * (f_xyz[..., 0] - f_xyz[..., 1])
-    b = 200.0 * (f_xyz[..., 1] - f_xyz[..., 2])
+    height, width = rgb_u8.shape[:2]
+    l_uint8 = np.empty((height, width), dtype=np.uint8)
+    a_out = np.empty((height, width), dtype=np.float32)
+    b_out = np.empty((height, width), dtype=np.float32)
 
-    l_uint8 = np.clip(l * (255.0 / 100.0), 0, 255).astype(np.uint8)
-    return l_uint8, a.astype(np.float32, copy=False), b.astype(np.float32, copy=False)
+    max_chunk_pixels = 1_048_576
+    rows_per_chunk = max(1, max_chunk_pixels // max(1, width))
+    rgb_to_xyz = _SRGB_TO_XYZ
+    white_x = _D65_WHITE[0]
+    white_y = _D65_WHITE[1]
+    white_z = _D65_WHITE[2]
+
+    for y0 in range(0, height, rows_per_chunk):
+        y1 = min(height, y0 + rows_per_chunk)
+        rgb = rgb_u8[y0:y1].astype(np.float32) / 255.0
+        linear_rgb = _srgb_to_linear(rgb)
+
+        r = linear_rgb[..., 0]
+        g = linear_rgb[..., 1]
+        bl = linear_rgb[..., 2]
+
+        x = (rgb_to_xyz[0, 0] * r + rgb_to_xyz[0, 1] * g + rgb_to_xyz[0, 2] * bl) / white_x
+        y = (rgb_to_xyz[1, 0] * r + rgb_to_xyz[1, 1] * g + rgb_to_xyz[1, 2] * bl) / white_y
+        z = (rgb_to_xyz[2, 0] * r + rgb_to_xyz[2, 1] * g + rgb_to_xyz[2, 2] * bl) / white_z
+
+        fx = _f_xyz_to_lab(x)
+        fy = _f_xyz_to_lab(y)
+        fz = _f_xyz_to_lab(z)
+
+        lightness = (np.float32(116.0) * fy) - np.float32(16.0)
+        a = np.float32(500.0) * (fx - fy)
+        b = np.float32(200.0) * (fy - fz)
+
+        l_uint8[y0:y1] = np.clip(lightness * (255.0 / 100.0), 0, 255).astype(np.uint8)
+        a_out[y0:y1] = a.astype(np.float32, copy=False)
+        b_out[y0:y1] = b.astype(np.float32, copy=False)
+
+    return l_uint8, a_out, b_out
+
+
+def _linear_srgb_channel_to_u8(channel: np.ndarray) -> np.ndarray:
+    """Convert one linear-light sRGB channel to uint8 sRGB.
+
+    Kept channel-wise so HDR Effects does not allocate several full-frame
+    HxWx3 float32 temporaries while converting LAB back to RGB.  Some NumPy
+    builds have crashed in those native ufunc/matmul paths under ComfyUI's
+    large-image memory pressure instead of raising MemoryError.
+    """
+    srgb = np.clip(_linear_to_srgb(channel), 0.0, 1.0)
+    return (srgb * 255.0 + 0.5).astype(np.uint8)
 
 
 def _lab_components_to_rgb(l_uint8: np.ndarray, a: np.ndarray, b: np.ndarray) -> Image.Image:
-    lab = np.empty((l_uint8.shape[0], l_uint8.shape[1], 3), dtype=np.float32)
-    lab[..., 0] = np.asarray(l_uint8, dtype=np.float32) * (100.0 / 255.0)
-    lab[..., 1] = np.asarray(a, dtype=np.float32)
-    lab[..., 2] = np.asarray(b, dtype=np.float32)
+    l_uint8 = np.ascontiguousarray(l_uint8)
+    a = np.ascontiguousarray(a, dtype=np.float32)
+    b = np.ascontiguousarray(b, dtype=np.float32)
 
-    fy = (lab[..., 0] + 16.0) / 116.0
-    fx = lab[..., 1] / 500.0 + fy
-    fz = fy - lab[..., 2] / 200.0
+    if l_uint8.ndim != 2:
+        raise ValueError(f"Expected 2D LAB luminance channel, got shape {l_uint8.shape}")
+    if a.shape != l_uint8.shape or b.shape != l_uint8.shape:
+        raise ValueError(
+            "LAB channel shape mismatch: "
+            f"L={l_uint8.shape}, a={a.shape}, b={b.shape}"
+        )
 
-    xyz = np.empty_like(lab)
-    xyz[..., 0] = _f_lab_to_xyz(fx)
-    xyz[..., 1] = _f_lab_to_xyz(fy)
-    xyz[..., 2] = _f_lab_to_xyz(fz)
-    xyz = xyz * _D65_WHITE
+    height, width = l_uint8.shape
+    rgb_u8 = np.empty((height, width, 3), dtype=np.uint8)
 
-    linear_rgb = xyz @ _XYZ_TO_SRGB.T
-    rgb = np.clip(_linear_to_srgb(linear_rgb), 0.0, 1.0)
-    return Image.fromarray((rgb * 255.0 + 0.5).astype(np.uint8), mode='RGB')
+    # Process rows in bounded chunks.  This avoids the previous full-frame LAB,
+    # XYZ, linear-RGB and matrix-multiply temporaries while preserving the same
+    # D65/LAB math.  Keep the chunk size large enough to avoid Python-loop cost
+    # on normal images but small enough for 4K/8K frames and batched Comfy runs.
+    max_chunk_pixels = 1_048_576
+    rows_per_chunk = max(1, max_chunk_pixels // max(1, width))
+    xyz_to_rgb = _XYZ_TO_SRGB
+    white_x = _D65_WHITE[0]
+    white_y = _D65_WHITE[1]
+    white_z = _D65_WHITE[2]
+
+    for y0 in range(0, height, rows_per_chunk):
+        y1 = min(height, y0 + rows_per_chunk)
+
+        lightness = l_uint8[y0:y1].astype(np.float32, copy=False) * (100.0 / 255.0)
+        fy = (lightness + 16.0) / 116.0
+        fx = a[y0:y1] / 500.0 + fy
+        fz = fy - b[y0:y1] / 200.0
+
+        x = _f_lab_to_xyz(fx) * white_x
+        y = _f_lab_to_xyz(fy) * white_y
+        z = _f_lab_to_xyz(fz) * white_z
+
+        # Inline the XYZ->linear sRGB matrix multiply channel-wise.  This keeps
+        # execution inside simple 2D ufuncs instead of NumPy's 3D matmul path.
+        r = xyz_to_rgb[0, 0] * x + xyz_to_rgb[0, 1] * y + xyz_to_rgb[0, 2] * z
+        g = xyz_to_rgb[1, 0] * x + xyz_to_rgb[1, 1] * y + xyz_to_rgb[1, 2] * z
+        bl = xyz_to_rgb[2, 0] * x + xyz_to_rgb[2, 1] * y + xyz_to_rgb[2, 2] * z
+
+        rgb_u8[y0:y1, :, 0] = _linear_srgb_channel_to_u8(r)
+        rgb_u8[y0:y1, :, 1] = _linear_srgb_channel_to_u8(g)
+        rgb_u8[y0:y1, :, 2] = _linear_srgb_channel_to_u8(bl)
+
+    return Image.fromarray(rgb_u8, mode='RGB')
 
 
 def adjust_shadows(luminance_array, shadow_intensity, hdr_intensity):
