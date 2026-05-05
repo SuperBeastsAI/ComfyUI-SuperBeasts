@@ -797,6 +797,20 @@ _XYZ_TO_SRGB = np.array([
     [ 0.0556434, -0.2040259,  1.0572252],
 ], dtype=np.float32)
 
+# HDR Effects can run after large sampler allocations. Serializing only this
+# node's native LAB work prevents concurrent HDR invocations from multiplying
+# the bounded chunk temporaries under WSL/ComfyUI memory pressure.
+_HDR_EFFECTS_LOCK = threading.RLock()
+
+
+def _safe_positive_int_env(name: str, default: int, minimum: int = 1) -> int:
+    raw = os.environ.get(name, str(default))
+    try:
+        return max(minimum, int(raw))
+    except ValueError:
+        print(f"[SuperBeasts] Warning: invalid {name}={raw!r}; using {default}")
+        return max(minimum, default)
+
 
 def _srgb_to_linear(rgb):
     rgb = np.asarray(rgb, dtype=np.float32)
@@ -927,6 +941,126 @@ def _lab_components_to_rgb(l_uint8: np.ndarray, a: np.ndarray, b: np.ndarray) ->
     return Image.fromarray(rgb_u8, mode='RGB')
 
 
+def _apply_hdr_luminance_chunk(
+    l_uint8: np.ndarray,
+    hdr_intensity: float,
+    shadow_intensity: float,
+    highlight_intensity: float,
+    gamma_intensity: float,
+) -> np.ndarray:
+    """Apply the HDR node's luminance math to one uint8 L* chunk.
+
+    The old adjust_shadows_non_linear/adjust_highlights_non_linear calls
+    allocated two extra full-frame arrays, but merge_adjustments_with_blend_modes
+    never used those arrays. This keeps the effective per-pixel math from
+    merge_adjustments_with_blend_modes followed by apply_gamma_correction so the
+    result is independent of chunk boundaries.
+    """
+    base = np.asarray(l_uint8, dtype=np.float32)
+
+    scaled_shadow_intensity = shadow_intensity ** 2 * hdr_intensity
+    scaled_highlight_intensity = highlight_intensity ** 2 * hdr_intensity
+
+    shadow_mask = np.clip((1.0 - (base / 255.0)) ** 2, 0.0, 1.0)
+    highlight_mask = np.clip((base / 255.0) ** 2, 0.0, 1.0)
+
+    adjusted_shadows = np.clip(base * (1.0 - shadow_mask * scaled_shadow_intensity), 0.0, 255.0)
+    adjusted_highlights = np.clip(base + (255.0 - base) * highlight_mask * scaled_highlight_intensity, 0.0, 255.0)
+    adjusted_luminance = np.clip(adjusted_shadows + adjusted_highlights - base, 0.0, 255.0)
+
+    final_luminance_u8 = np.clip(
+        base * (1.0 - hdr_intensity) + adjusted_luminance * hdr_intensity,
+        0.0,
+        255.0,
+    ).astype(np.uint8)
+
+    if gamma_intensity != 0:
+        gamma_corrected = 1.0 / (1.1 - gamma_intensity)
+        final_luminance = 255.0 * ((final_luminance_u8.astype(np.float32) / 255.0) ** gamma_corrected)
+        return np.clip(final_luminance, 0.0, 255.0).astype(np.uint8)
+
+    return final_luminance_u8
+
+
+def _lab_chunk_to_rgb_u8(l_uint8: np.ndarray, a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    """Convert one LAB chunk to RGB using the same math as _lab_components_to_rgb."""
+    lightness = np.asarray(l_uint8, dtype=np.float32) * (100.0 / 255.0)
+    fy = (lightness + 16.0) / 116.0
+    fx = np.asarray(a, dtype=np.float32) / 500.0 + fy
+    fz = fy - np.asarray(b, dtype=np.float32) / 200.0
+
+    x = _f_lab_to_xyz(fx) * _D65_WHITE[0]
+    y = _f_lab_to_xyz(fy) * _D65_WHITE[1]
+    z = _f_lab_to_xyz(fz) * _D65_WHITE[2]
+
+    r = _XYZ_TO_SRGB[0, 0] * x + _XYZ_TO_SRGB[0, 1] * y + _XYZ_TO_SRGB[0, 2] * z
+    g = _XYZ_TO_SRGB[1, 0] * x + _XYZ_TO_SRGB[1, 1] * y + _XYZ_TO_SRGB[1, 2] * z
+    bl = _XYZ_TO_SRGB[2, 0] * x + _XYZ_TO_SRGB[2, 1] * y + _XYZ_TO_SRGB[2, 2] * z
+
+    out = np.empty((*l_uint8.shape, 3), dtype=np.uint8)
+    out[..., 0] = _linear_srgb_channel_to_u8(r)
+    out[..., 1] = _linear_srgb_channel_to_u8(g)
+    out[..., 2] = _linear_srgb_channel_to_u8(bl)
+    return out
+
+
+def _apply_hdr_effect_chunked(
+    img: Image.Image,
+    hdr_intensity: float,
+    shadow_intensity: float,
+    highlight_intensity: float,
+    gamma_intensity: float,
+) -> Image.Image:
+    """Apply HDR luminance adjustment with bounded native working memory."""
+    rgb_img = img if img.mode == 'RGB' else img.convert('RGB')
+    rgb_u8 = np.ascontiguousarray(np.asarray(rgb_img, dtype=np.uint8))
+    if rgb_u8.ndim != 3 or rgb_u8.shape[2] != 3:
+        raise ValueError(f"Expected RGB image array with shape HxWx3, got {rgb_u8.shape}")
+
+    height, width = rgb_u8.shape[:2]
+    rgb_out = np.empty((height, width, 3), dtype=np.uint8)
+
+    # Lower than the legacy 1M-pixel chunk because this path may run after a
+    # large sampler while CUDA/WSL memory pressure is already high. Users can
+    # raise it if they prefer throughput over peak-memory margin.
+    max_chunk_pixels = _safe_positive_int_env("SUPERBEASTS_HDR_CHUNK_PIXELS", 262_144, 4096)
+    rows_per_chunk = max(1, max_chunk_pixels // max(1, width))
+
+    for y0 in range(0, height, rows_per_chunk):
+        y1 = min(height, y0 + rows_per_chunk)
+
+        rgb = rgb_u8[y0:y1].astype(np.float32) / 255.0
+        linear_rgb = _srgb_to_linear(rgb)
+
+        r = linear_rgb[..., 0]
+        g = linear_rgb[..., 1]
+        bl = linear_rgb[..., 2]
+
+        x = (_SRGB_TO_XYZ[0, 0] * r + _SRGB_TO_XYZ[0, 1] * g + _SRGB_TO_XYZ[0, 2] * bl) / _D65_WHITE[0]
+        y = (_SRGB_TO_XYZ[1, 0] * r + _SRGB_TO_XYZ[1, 1] * g + _SRGB_TO_XYZ[1, 2] * bl) / _D65_WHITE[1]
+        z = (_SRGB_TO_XYZ[2, 0] * r + _SRGB_TO_XYZ[2, 1] * g + _SRGB_TO_XYZ[2, 2] * bl) / _D65_WHITE[2]
+
+        fx = _f_xyz_to_lab(x)
+        fy = _f_xyz_to_lab(y)
+        fz = _f_xyz_to_lab(z)
+
+        lightness = (np.float32(116.0) * fy) - np.float32(16.0)
+        a = np.float32(500.0) * (fx - fy)
+        b = np.float32(200.0) * (fy - fz)
+
+        l_uint8 = np.clip(lightness * (255.0 / 100.0), 0, 255).astype(np.uint8)
+        adjusted_l = _apply_hdr_luminance_chunk(
+            l_uint8,
+            hdr_intensity=hdr_intensity,
+            shadow_intensity=shadow_intensity,
+            highlight_intensity=highlight_intensity,
+            gamma_intensity=gamma_intensity,
+        )
+        rgb_out[y0:y1] = _lab_chunk_to_rgb_u8(adjusted_l, a, b)
+
+    return Image.fromarray(rgb_out, mode='RGB')
+
+
 def adjust_shadows(luminance_array, shadow_intensity, hdr_intensity):
     # Darken shadows more as shadow_intensity increases, scaled by hdr_intensity
     return np.clip(luminance_array - luminance_array * shadow_intensity * hdr_intensity * 0.5, 0, 255)
@@ -1046,34 +1180,20 @@ class HDREffects:
     
     @apply_to_batch
     def apply_hdr2(self, image, hdr_intensity=0.5, shadow_intensity=0.25, highlight_intensity=0.75, gamma_intensity=0.25, contrast=0.1, enhance_color=0.25):
-        # Load the image and force a stable RGB input mode.
+        # Force a stable RGB input mode. The HDR/LAB conversion is deliberately
+        # done through the bounded chunked path below; repeated ComfyUI runs can
+        # otherwise accumulate large native NumPy/Pillow allocations and wedge
+        # the prompt worker under WSL memory pressure.
         img = tensor2pil(image).convert('RGB')
 
-        # Convert to LAB without relying on Pillow/ImageCms. The CMS path can
-        # segfault inside the C extension on some Python/Pillow builds.
-        l_uint8, a_channel, b_channel = _rgb_to_lab_components(img)
-        luminance = Image.fromarray(l_uint8, mode='L')
-
-        # Convert luminance to a NumPy array for processing
-        lum_array = l_uint8.astype(np.float32)
-
-        # Preparing adjustment layers (shadows, midtones, highlights)
-        # This example assumes you have methods to extract or calculate these adjustments
-        shadows_adjusted = adjust_shadows_non_linear(luminance, shadow_intensity)
-        highlights_adjusted = adjust_highlights_non_linear(luminance, highlight_intensity)
-
-
-        merged_adjustments = merge_adjustments_with_blend_modes(lum_array, shadows_adjusted, highlights_adjusted, hdr_intensity, shadow_intensity, highlight_intensity)
-
-        # Apply gamma correction with a base_gamma value (define based on desired effect)
-        gamma_corrected = apply_gamma_correction(np.array(merged_adjustments), gamma_intensity)
-        if gamma_corrected.shape != l_uint8.shape:
-            gamma_corrected = np.array(
-                Image.fromarray(gamma_corrected, mode='L').resize((l_uint8.shape[1], l_uint8.shape[0]))
+        with _HDR_EFFECTS_LOCK:
+            img_adjusted = _apply_hdr_effect_chunked(
+                img,
+                hdr_intensity=hdr_intensity,
+                shadow_intensity=shadow_intensity,
+                highlight_intensity=highlight_intensity,
+                gamma_intensity=gamma_intensity,
             )
-
-        # Merge L channel back with original A/B components and convert back to RGB.
-        img_adjusted = _lab_components_to_rgb(gamma_corrected, a_channel, b_channel)
         
         
         # Enhance contrast
