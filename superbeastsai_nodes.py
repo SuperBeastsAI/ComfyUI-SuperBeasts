@@ -982,6 +982,54 @@ def _apply_hdr_luminance_chunk(
     return final_luminance_u8
 
 
+def _smoothstep(edge0: float, edge1: float, x: np.ndarray) -> np.ndarray:
+    """Return a smooth 0..1 ramp for float arrays."""
+    if edge1 <= edge0:
+        return np.asarray(x >= edge1, dtype=np.float32)
+    t = np.clip((np.asarray(x, dtype=np.float32) - edge0) / (edge1 - edge0), 0.0, 1.0)
+    return t * t * (3.0 - 2.0 * t)
+
+
+def _stabilize_dark_lab_chroma(
+    rgb_u8: np.ndarray,
+    base_l_uint8: np.ndarray,
+    adjusted_l_uint8: np.ndarray,
+    a: np.ndarray,
+    b: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Dampen unstable Lab chroma for near-neutral deep-shadow pixels.
+
+    The HDR pass changes only L*.  Reusing the original Lab a/b after pushing a
+    near-black pixel darker can turn tiny RGB quantization/model noise into
+    out-of-gamut chroma that clips back as coloured speckles.  Apply the guard
+    only where the source pixel was dark and nearly neutral, so intentionally
+    coloured dark pixels keep their hue.
+    """
+    base_l = np.asarray(base_l_uint8, dtype=np.float32)
+    adjusted_l = np.asarray(adjusted_l_uint8, dtype=np.float32)
+
+    rgb = np.asarray(rgb_u8, dtype=np.float32)
+    rgb_spread = rgb.max(axis=-1) - rgb.min(axis=-1)
+
+    # 1.0 for nearly neutral dark pixels, 0.0 for intentionally coloured pixels.
+    neutral_weight = 1.0 - _smoothstep(6.0, 24.0, rgb_spread)
+
+    # Full chroma is preserved above ~12.5% L*.  It fades smoothly to neutral in
+    # the bottom ~3% where Lab hue is least stable and RGB clipping is most visible.
+    dark_gate = _smoothstep(8.0, 32.0, np.minimum(base_l, adjusted_l))
+
+    # If the HDR luminance step crushes a pixel darker, scale chroma with that
+    # luminance loss.  The +1 avoids division spikes on black pixels.
+    luminance_ratio = np.clip((adjusted_l + 1.0) / (base_l + 1.0), 0.0, 1.0)
+    neutral_shadow_scale = dark_gate * luminance_ratio
+    chroma_scale = (1.0 - neutral_weight) + neutral_shadow_scale * neutral_weight
+
+    return (
+        np.asarray(a, dtype=np.float32) * chroma_scale,
+        np.asarray(b, dtype=np.float32) * chroma_scale,
+    )
+
+
 def _lab_chunk_to_rgb_u8(l_uint8: np.ndarray, a: np.ndarray, b: np.ndarray) -> np.ndarray:
     """Convert one LAB chunk to RGB using the same math as _lab_components_to_rgb."""
     lightness = np.asarray(l_uint8, dtype=np.float32) * (100.0 / 255.0)
@@ -1056,7 +1104,8 @@ def _apply_hdr_effect_chunked(
             highlight_intensity=highlight_intensity,
             gamma_intensity=gamma_intensity,
         )
-        rgb_out[y0:y1] = _lab_chunk_to_rgb_u8(adjusted_l, a, b)
+        stable_a, stable_b = _stabilize_dark_lab_chroma(rgb_u8[y0:y1], l_uint8, adjusted_l, a, b)
+        rgb_out[y0:y1] = _lab_chunk_to_rgb_u8(adjusted_l, stable_a, stable_b)
 
     return Image.fromarray(rgb_out, mode='RGB')
 
