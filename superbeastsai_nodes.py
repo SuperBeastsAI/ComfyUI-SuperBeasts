@@ -814,21 +814,42 @@ def _safe_positive_int_env(name: str, default: int, minimum: int = 1) -> int:
 
 def _srgb_to_linear(rgb):
     rgb = np.asarray(rgb, dtype=np.float32)
-    return np.where(rgb <= 0.04045, rgb / 12.92, ((rgb + 0.055) / 1.055) ** 2.4)
+    out = rgb / np.float32(12.92)
+    high = rgb > np.float32(0.04045)
+    if np.any(high):
+        out[high] = ((rgb[high] + np.float32(0.055)) / np.float32(1.055)) ** np.float32(2.4)
+    return out
 
 
 def _linear_to_srgb(rgb):
     rgb = np.asarray(rgb, dtype=np.float32)
-    return np.where(rgb <= 0.0031308, 12.92 * rgb, 1.055 * np.power(np.clip(rgb, 0.0, None), 1.0 / 2.4) - 0.055)
+    out = rgb * np.float32(12.92)
+    high = rgb > np.float32(0.0031308)
+    if np.any(high):
+        out[high] = (
+            np.float32(1.055) * np.power(np.maximum(rgb[high], np.float32(0.0)), np.float32(1.0 / 2.4))
+            - np.float32(0.055)
+        )
+    return out
 
 
 def _f_xyz_to_lab(t):
-    return np.where(t > _LAB_EPSILON, np.cbrt(t), (_LAB_KAPPA * t + 16.0) / 116.0)
+    t = np.asarray(t, dtype=np.float32)
+    out = (_LAB_KAPPA * t + np.float32(16.0)) / np.float32(116.0)
+    high = t > np.float32(_LAB_EPSILON)
+    if np.any(high):
+        out[high] = np.cbrt(t[high])
+    return out
 
 
 def _f_lab_to_xyz(t):
-    t3 = t ** 3
-    return np.where(t3 > _LAB_EPSILON, t3, (116.0 * t - 16.0) / _LAB_KAPPA)
+    t = np.asarray(t, dtype=np.float32)
+    t3 = t * t * t
+    out = (np.float32(116.0) * t - np.float32(16.0)) / np.float32(_LAB_KAPPA)
+    high = t3 > np.float32(_LAB_EPSILON)
+    if np.any(high):
+        out[high] = t3[high]
+    return out
 
 
 def _rgb_to_lab_components(img: Image.Image):
@@ -885,8 +906,11 @@ def _linear_srgb_channel_to_u8(channel: np.ndarray) -> np.ndarray:
     builds have crashed in those native ufunc/matmul paths under ComfyUI's
     large-image memory pressure instead of raising MemoryError.
     """
-    srgb = np.clip(_linear_to_srgb(channel), 0.0, 1.0)
-    return (srgb * 255.0 + 0.5).astype(np.uint8)
+    srgb = _linear_to_srgb(channel)
+    np.clip(srgb, 0.0, 1.0, out=srgb)
+    srgb *= np.float32(255.0)
+    srgb += np.float32(0.5)
+    return srgb.astype(np.uint8)
 
 
 def _lab_components_to_rgb(l_uint8: np.ndarray, a: np.ndarray, b: np.ndarray) -> Image.Image:
@@ -1107,6 +1131,15 @@ def _apply_hdr_effect_chunked(
         stable_a, stable_b = _stabilize_dark_lab_chroma(rgb_u8[y0:y1], l_uint8, adjusted_l, a, b)
         rgb_out[y0:y1] = _lab_chunk_to_rgb_u8(adjusted_l, stable_a, stable_b)
 
+        # Python loop locals otherwise keep the previous chunk's native NumPy
+        # buffers alive until the next reassignment.  Under repeated ComfyUI/WSL
+        # runs, that needlessly raises the peak around this node and can wedge the
+        # prompt worker instead of producing a Python MemoryError.
+        del (
+            rgb, linear_rgb, r, g, bl, x, y, z, fx, fy, fz, lightness,
+            a, b, l_uint8, adjusted_l, stable_a, stable_b,
+        )
+
     return Image.fromarray(rgb_out, mode='RGB')
 
 
@@ -1234,27 +1267,33 @@ class HDREffects:
         # otherwise accumulate large native NumPy/Pillow allocations and wedge
         # the prompt worker under WSL memory pressure.
         img = tensor2pil(image).convert('RGB')
+        img_adjusted = None
+        contrast_adjusted = None
+        color_adjusted = None
 
-        with _HDR_EFFECTS_LOCK:
-            img_adjusted = _apply_hdr_effect_chunked(
-                img,
-                hdr_intensity=hdr_intensity,
-                shadow_intensity=shadow_intensity,
-                highlight_intensity=highlight_intensity,
-                gamma_intensity=gamma_intensity,
-            )
-        
-        
-        # Enhance contrast
-        enhancer = ImageEnhance.Contrast(img_adjusted)
-        contrast_adjusted = enhancer.enhance(1 + contrast)
+        try:
+            with _HDR_EFFECTS_LOCK:
+                img_adjusted = _apply_hdr_effect_chunked(
+                    img,
+                    hdr_intensity=hdr_intensity,
+                    shadow_intensity=shadow_intensity,
+                    highlight_intensity=highlight_intensity,
+                    gamma_intensity=gamma_intensity,
+                )
 
-        
-        # Enhance color saturation
-        enhancer = ImageEnhance.Color(contrast_adjusted)
-        color_adjusted = enhancer.enhance(1 + enhance_color * 0.2)
-         
-        return pil2tensor(color_adjusted)
+            # Enhance contrast
+            contrast_adjusted = ImageEnhance.Contrast(img_adjusted).enhance(1 + contrast)
+
+            # Enhance color saturation
+            color_adjusted = ImageEnhance.Color(contrast_adjusted).enhance(1 + enhance_color * 0.2)
+
+            return pil2tensor(color_adjusted)
+        finally:
+            for pil_img in (color_adjusted, contrast_adjusted, img_adjusted, img):
+                if pil_img is not None:
+                    with contextlib.suppress(Exception):
+                        pil_img.close()
+            gc.collect()
 
 class MakeResizedMaskBatch:
     DESCRIPTION = "Combine up to 12 individual masks/batches into one mask batch, automatically sizing/cropping each mask to the requested width/height. Useful for building consistent video masks."
