@@ -827,6 +827,15 @@ def _hdr_debug(msg: str) -> None:
 
 _LIBC_MALLOC_TRIM = None
 _LIBC_MALLOC_TRIM_PROBED = False
+_LIBC_MALLOC_TRIM_WARNED = False
+
+
+def _warn_malloc_trim_once(reason: str) -> None:
+    """Report the first Linux malloc_trim failure without flooding queued runs."""
+    global _LIBC_MALLOC_TRIM_WARNED
+    if not _LIBC_MALLOC_TRIM_WARNED:
+        _LIBC_MALLOC_TRIM_WARNED = True
+        print(f"[SuperBeasts][HDR] malloc_trim unavailable: {reason}", file=sys.stderr)
 
 
 def _trim_native_heap() -> None:
@@ -835,28 +844,31 @@ def _trim_native_heap() -> None:
     Repeated large HDR frames can leave glibc arenas resident even after Python
     references are gone.  Under WSL this can turn the third or fourth queued
     generation into a whole-VM wedge instead of a Python MemoryError.  The call
-    is Linux/glibc-only and silently skipped elsewhere.
+    is Linux/glibc-only, is skipped elsewhere, and warns once on Linux failure.
     """
     global _LIBC_MALLOC_TRIM, _LIBC_MALLOC_TRIM_PROBED
     if not _safe_bool_env("SUPERBEASTS_HDR_MALLOC_TRIM", True):
         return
     if not sys.platform.startswith("linux"):
         return
-    try:
-        if not _LIBC_MALLOC_TRIM_PROBED:
-            _LIBC_MALLOC_TRIM_PROBED = True
-            try:
-                libc = ctypes.CDLL("libc.so.6")
-                _LIBC_MALLOC_TRIM = getattr(libc, "malloc_trim", None)
-                if _LIBC_MALLOC_TRIM is not None:
-                    _LIBC_MALLOC_TRIM.argtypes = [ctypes.c_size_t]
-                    _LIBC_MALLOC_TRIM.restype = ctypes.c_int
-            except Exception:
-                _LIBC_MALLOC_TRIM = None
-        if _LIBC_MALLOC_TRIM is not None:
+    if not _LIBC_MALLOC_TRIM_PROBED:
+        _LIBC_MALLOC_TRIM_PROBED = True
+        try:
+            libc = ctypes.CDLL("libc.so.6")
+            _LIBC_MALLOC_TRIM = getattr(libc, "malloc_trim", None)
+            if _LIBC_MALLOC_TRIM is None:
+                _warn_malloc_trim_once("libc.so.6 does not expose malloc_trim")
+            else:
+                _LIBC_MALLOC_TRIM.argtypes = [ctypes.c_size_t]
+                _LIBC_MALLOC_TRIM.restype = ctypes.c_int
+        except Exception as exc:
+            _LIBC_MALLOC_TRIM = None
+            _warn_malloc_trim_once(f"probe failed: {exc}")
+    if _LIBC_MALLOC_TRIM is not None:
+        try:
             _LIBC_MALLOC_TRIM(0)
-    except Exception:
-        pass
+        except Exception as exc:
+            _warn_malloc_trim_once(f"call failed: {exc}")
 
 
 def _hdr_rows_per_chunk(width: int) -> int:
@@ -1499,8 +1511,9 @@ class HDREffects:
                     )
                     hdr_u8 = None
 
-                    gc.collect()
-                    _trim_native_heap()
+                    if output[index].numel() >= 16_777_216:
+                        gc.collect()
+                        _trim_native_heap()
                     _hdr_debug(f"frame {index + 1}/{image_count}: done")
 
             return (output, )
