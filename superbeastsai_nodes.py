@@ -2192,6 +2192,24 @@ class SuperPopColorAdjustment:
         image_count = int(image.shape[0])
         if image_count == 0:
             raise ValueError("SuperPopColorAdjustment received an empty image batch")
+        if context is not None:
+            if not isinstance(context, torch.Tensor):
+                raise TypeError(
+                    f"SuperPopColorAdjustment expected a torch.Tensor context IMAGE, got {type(context)!r}"
+                )
+            if context.ndim == 3:
+                context = context.unsqueeze(0)
+            if context.ndim != 4:
+                raise ValueError(
+                    f"SuperPopColorAdjustment expected context IMAGE shape BHWC, got {tuple(context.shape)}"
+                )
+            if context.shape[-1] != 3:
+                raise ValueError(
+                    f"SuperPopColorAdjustment expected 3-channel context IMAGE, got {tuple(context.shape)}"
+                )
+            context_count = int(context.shape[0])
+            if context_count == 0:
+                raise ValueError("SuperPopColorAdjustment received an empty context batch")
         count = int(count)
         if count < 1:
             raise ValueError(f"SuperPopColorAdjustment count must be >= 1, got {count}")
@@ -2417,14 +2435,14 @@ class SuperPopResidualBlend:
         elif isinstance(image, (list, tuple)):
             image_list = list(image)
         else:
-            raise TypeError("Unsupported image type for SuperPopResidualBlend – expected torch.Tensor or list of tensors.")
+            raise TypeError("Unsupported image type for SuperPopResidualBlend - expected torch.Tensor or list of tensors.")
 
         if isinstance(residual, torch.Tensor):
             residual_list = list(residual)
         elif isinstance(residual, (list, tuple)):
             residual_list = list(residual)
         else:
-            raise TypeError("Unsupported residual type for SuperPopResidualBlend – expected torch.Tensor or list of tensors.")
+            raise TypeError("Unsupported residual type for SuperPopResidualBlend - expected torch.Tensor or list of tensors.")
 
         # Simple broadcast if we only got one residual for many images
         if len(residual_list) == 1 and len(image_list) > 1:
@@ -2448,16 +2466,15 @@ class SuperPopResidualBlend:
             img = img_t.squeeze().clamp(0,1)
             res = res_t.squeeze()
 
-            # Quantise the source to 8-bit – SuperPopColorAdjustment converted the
+            # Quantise the source to 8-bit - SuperPopColorAdjustment converted the
             # original tensor to PIL (uint8) before computing residuals.  Without
-            # replicating that rounding we would blend residuals into a higher-
+            # replicating that truncation we would blend residuals into a higher-
             # precision version of the source, leading to small but noticeable
-            # mismatches (especially at strength = 1.0).  By rounding to the
-            # same 0–255 integer grid first we guarantee that
-            #   original + residual == corrected
-            img_q = (img * 255.0).round().div(255.0)
+            # mismatches. Match the direct SPCA path at both quantization points.
+            img_q = img.mul(255.0).to(torch.uint8).to(torch.float32).div(255.0)
 
             blended = (img_q + res * strength).clamp(0,1)
+            blended = blended.mul(255.0).to(torch.uint8).to(torch.float32).div(255.0)
 
             # Restore missing channel dimension if blend lost it (should stay (C,H,W))
             if blended.ndim == 2:
