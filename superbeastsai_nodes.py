@@ -2462,9 +2462,17 @@ class SuperPopResidualBlend:
             # Ensure on same device (fallback to img_t's device)
             res_t = res_t.to(img_t.device)
 
-            # Both tensors may include an extra leading batch/channel dimension; squeeze safely
-            img = img_t.squeeze().clamp(0,1)
-            res = res_t.squeeze()
+            # Strip only an optional leading batch axis so valid singleton
+            # spatial dimensions remain intact.
+            if img_t.ndim == 4 and img_t.shape[0] == 1:
+                img = img_t[0]
+            else:
+                img = img_t
+            if res_t.ndim == 4 and res_t.shape[0] == 1:
+                res = res_t[0]
+            else:
+                res = res_t
+            img = img.clamp(0, 1)
 
             # Quantise the source to 8-bit - SuperPopColorAdjustment converted the
             # original tensor to PIL (uint8) before computing residuals.  Without
