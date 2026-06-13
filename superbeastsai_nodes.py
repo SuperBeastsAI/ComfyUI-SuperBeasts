@@ -1600,6 +1600,50 @@ class MakeResizedMaskBatch:
 
 
 
+
+
+def _write_spca_blend_to_output(
+    orig_np_full: np.ndarray,
+    residual_full: np.ndarray,
+    strength: float,
+    out_frame: torch.Tensor,
+) -> None:
+    """Write SuperPop blended output directly into one Comfy IMAGE frame.
+
+    This preserves the previous PIL round-trip quantization:
+    Image.fromarray((clip(base + residual * s) * 255).astype(uint8))
+    followed by pil2tensor(...).
+    """
+    if out_frame.device.type != "cpu":
+        raise ValueError("SuperPopColorAdjustment writes CPU IMAGE tensors")
+    if out_frame.dtype != torch.float32:
+        raise ValueError(f"SuperPopColorAdjustment expected float32 output, got {out_frame.dtype}")
+
+    height, width = orig_np_full.shape[:2]
+    if tuple(out_frame.shape) != (height, width, 3):
+        raise ValueError(
+            f"SuperPopColorAdjustment output frame shape mismatch: "
+            f"expected {(height, width, 3)}, got {tuple(out_frame.shape)}"
+        )
+
+    out_np = out_frame.numpy()
+    rows_per_chunk = _hdr_rows_per_chunk(width)
+    s = np.float32(float(strength))
+    inv255 = np.float32(1.0 / 255.0)
+
+    for y0 in range(0, height, rows_per_chunk):
+        y1 = min(height, y0 + rows_per_chunk)
+        work = orig_np_full[y0:y1].astype(np.float32, copy=True)
+        work += residual_full[y0:y1] * s
+        np.clip(work, 0.0, 1.0, out=work)
+        work *= np.float32(255.0)
+        # Match astype(np.uint8) truncation from the previous PIL path.
+        quantized = work.astype(np.uint8).astype(np.float32)
+        quantized *= inv255
+        out_np[y0:y1] = quantized
+        del work, quantized
+
+
 def adjust_brightness(image, brightness_factor):
     enhancer = ImageEnhance.Brightness(image)
     adjusted_image = enhancer.enhance(brightness_factor)
@@ -2134,8 +2178,50 @@ class SuperPopColorAdjustment:
 
     def apply_adjustment(self, model, image, max_strength=1.0, count=1, overlap=0.5,
                          initial_context_for_batch=False, context=None):
-        # Ensure *image* is a batch tensor – iterate over each frame
-        output_tensors: list[torch.Tensor] = []
+        if image is None:
+            raise ValueError("SuperPopColorAdjustment expected an IMAGE tensor, got None")
+        if not isinstance(image, torch.Tensor):
+            raise TypeError(f"SuperPopColorAdjustment expected a torch.Tensor IMAGE, got {type(image)!r}")
+        if image.ndim == 3:
+            image = image.unsqueeze(0)
+        if image.ndim != 4:
+            raise ValueError(f"SuperPopColorAdjustment expected IMAGE shape BHWC, got {tuple(image.shape)}")
+        if image.shape[-1] != 3:
+            raise ValueError(f"SuperPopColorAdjustment expected 3-channel IMAGE, got {tuple(image.shape)}")
+
+        image_count = int(image.shape[0])
+        if image_count == 0:
+            raise ValueError("SuperPopColorAdjustment received an empty image batch")
+        if context is not None:
+            if not isinstance(context, torch.Tensor):
+                raise TypeError(
+                    f"SuperPopColorAdjustment expected a torch.Tensor context IMAGE, got {type(context)!r}"
+                )
+            if context.ndim == 3:
+                context = context.unsqueeze(0)
+            if context.ndim != 4:
+                raise ValueError(
+                    f"SuperPopColorAdjustment expected context IMAGE shape BHWC, got {tuple(context.shape)}"
+                )
+            if context.shape[-1] != 3:
+                raise ValueError(
+                    f"SuperPopColorAdjustment expected 3-channel context IMAGE, got {tuple(context.shape)}"
+                )
+            context_count = int(context.shape[0])
+            if context_count == 0:
+                raise ValueError("SuperPopColorAdjustment received an empty context batch")
+        count = int(count)
+        if count < 1:
+            raise ValueError(f"SuperPopColorAdjustment count must be >= 1, got {count}")
+
+        height = int(image.shape[1])
+        width = int(image.shape[2])
+        output_total = image_count * count
+
+        # Preallocate the final batch.  The old list + torch.cat path held every
+        # per-strength tensor and then allocated the full cat result on top of
+        # them, which is a multi-GB peak for 3800x5568 batches.
+        images_batch = torch.empty((output_total, height, width, 3), dtype=torch.float32, device="cpu")
         filename_prefixes: list[str] = []
         residual_tensors: list[torch.Tensor] = []
 
@@ -2271,49 +2357,41 @@ class SuperPopColorAdjustment:
             counter = np.maximum(counter, 1e-6)
             residual_full = residual_acc / counter
 
-            # Generate blended outputs for this frame
+            # Generate blended outputs for this frame directly into the final
+            # batch tensor.  Keep one residual tensor per source frame and reuse
+            # the reference for multiple strengths; residuals are read-only in
+            # the downstream blend node, so this avoids duplicating the same
+            # 250+ MB residual when count > 1.
             strengths = [max_strength * (count - i) / count for i in range(count)]
-            for s in strengths:
-                blended_np = np.clip(orig_np_full + residual_full * s, 0.0, 1.0)
-                blended_pil = Image.fromarray((blended_np * 255.0).astype(np.uint8))
-
-                # Convert blended PIL → tensor and append to batch list
-                output_tensors.append(pil2tensor(blended_pil))
-
-                # Build filename prefix string per‐image (we will join later)
+            residual_tensor = torch.from_numpy(np.ascontiguousarray(residual_full)).unsqueeze(0).float()
+            for strength_index, s in enumerate(strengths):
+                out_index = idx * count + strength_index
+                _write_spca_blend_to_output(orig_np_full, residual_full, s, images_batch[out_index])
                 filename_prefixes.append(f"SPCA_{s:.2f}_")
-
-                # Store residual for this output so downstream nodes can re-blend
-                residual_tensor = torch.from_numpy(residual_full).unsqueeze(0).float()
                 residual_tensors.append(residual_tensor)
+
             # Update progress bar
             if pbar is not None:
                 pbar.update_absolute(idx + 1)
 
             # Release large per-frame temporaries before the next iteration.
-            del original_pil, ctx_np_global, residual_acc, counter, orig_np_full, residual_full, weight_full
+            del original_pil, ctx_np_global, residual_acc, counter, orig_np_full, residual_full, weight_full, residual_tensor
             # For long batches this improves prompt-to-prompt memory stability.
             gc.collect()
+            _trim_native_heap()
 
         # ------------------------------------------------------------------
-        # Finalise outputs – convert accumulated lists to batched tensors and
-        # join filename prefixes into a single string (Save Image expects str)
+        # Finalise outputs – filename prefix string is consumed by Save Image.
         # ------------------------------------------------------------------
 
-        if not output_tensors:
-            # Fallback – no processing happened; return originals and zero residual.
-            images_batch = image
-            residual_batch = [torch.zeros_like(image)]
-            filename_prefix_str = ""
-        else:
-            images_batch = torch.cat(output_tensors, dim=0)
-            residual_batch = residual_tensors  # keep list per-frame
-            filename_prefix_str = "".join(filename_prefixes)
+        filename_prefix_str = "".join(filename_prefixes)
+        residual_batch = residual_tensors  # keep list per output image
 
         # Encourage prompt-to-prompt release of large temporary NumPy/PIL objects.
         # This does not unload cached models; it only reduces repeated-generation
         # accumulation pressure around this node.
         gc.collect()
+        _trim_native_heap()
         return (images_batch, filename_prefix_str, residual_batch)
 
 class SuperPopResidualBlend:
@@ -2357,14 +2435,14 @@ class SuperPopResidualBlend:
         elif isinstance(image, (list, tuple)):
             image_list = list(image)
         else:
-            raise TypeError("Unsupported image type for SuperPopResidualBlend – expected torch.Tensor or list of tensors.")
+            raise TypeError("Unsupported image type for SuperPopResidualBlend - expected torch.Tensor or list of tensors.")
 
         if isinstance(residual, torch.Tensor):
             residual_list = list(residual)
         elif isinstance(residual, (list, tuple)):
             residual_list = list(residual)
         else:
-            raise TypeError("Unsupported residual type for SuperPopResidualBlend – expected torch.Tensor or list of tensors.")
+            raise TypeError("Unsupported residual type for SuperPopResidualBlend - expected torch.Tensor or list of tensors.")
 
         # Simple broadcast if we only got one residual for many images
         if len(residual_list) == 1 and len(image_list) > 1:
@@ -2384,20 +2462,27 @@ class SuperPopResidualBlend:
             # Ensure on same device (fallback to img_t's device)
             res_t = res_t.to(img_t.device)
 
-            # Both tensors may include an extra leading batch/channel dimension; squeeze safely
-            img = img_t.squeeze().clamp(0,1)
-            res = res_t.squeeze()
+            # Strip only an optional leading batch axis so valid singleton
+            # spatial dimensions remain intact.
+            if img_t.ndim == 4 and img_t.shape[0] == 1:
+                img = img_t[0]
+            else:
+                img = img_t
+            if res_t.ndim == 4 and res_t.shape[0] == 1:
+                res = res_t[0]
+            else:
+                res = res_t
+            img = img.clamp(0, 1)
 
-            # Quantise the source to 8-bit – SuperPopColorAdjustment converted the
+            # Quantise the source to 8-bit - SuperPopColorAdjustment converted the
             # original tensor to PIL (uint8) before computing residuals.  Without
-            # replicating that rounding we would blend residuals into a higher-
+            # replicating that truncation we would blend residuals into a higher-
             # precision version of the source, leading to small but noticeable
-            # mismatches (especially at strength = 1.0).  By rounding to the
-            # same 0–255 integer grid first we guarantee that
-            #   original + residual == corrected
-            img_q = (img * 255.0).round().div(255.0)
+            # mismatches. Match the direct SPCA path at both quantization points.
+            img_q = img.mul(255.0).to(torch.uint8).to(torch.float32).div(255.0)
 
             blended = (img_q + res * strength).clamp(0,1)
+            blended = blended.mul(255.0).to(torch.uint8).to(torch.float32).div(255.0)
 
             # Restore missing channel dimension if blend lost it (should stay (C,H,W))
             if blended.ndim == 2:
