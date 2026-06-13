@@ -1223,22 +1223,43 @@ def apply_gamma_correction(lum_array, gamma):
 # create a wrapper function that can apply a function to multiple images in a batch while passing all other arguments to the function
 def apply_to_batch(func):
     def wrapper(self, image, *args, **kwargs):
-        images = []
+        output = None
+        image_count = 0
         try:
-            for img in image:
-                images.append(func(self, img, *args, **kwargs))
-            batch_tensor = torch.cat(images, dim=0)
-            return (batch_tensor, )
-        finally:
-            # Drop per-frame temporary tensors promptly between queued runs.
             if image is None:
-                image_count = 0
-            elif hasattr(image, "shape"):
-                image_count = int(image.shape[0])
-            else:
-                image_count = len(image)
-            images.clear()
-            if image_count > 16:
+                raise ValueError("HDR Effects expected an IMAGE tensor, got None")
+
+            image_count = int(image.shape[0]) if hasattr(image, "shape") else len(image)
+            for index, img in enumerate(image):
+                result = func(self, img, *args, **kwargs)
+                if not isinstance(result, torch.Tensor):
+                    raise TypeError(f"Batched node function returned {type(result)!r}, expected torch.Tensor")
+                if result.ndim < 1 or result.shape[0] != 1:
+                    raise ValueError(f"Batched node function must return shape (1, ...), got {tuple(result.shape)}")
+
+                if output is None:
+                    output = result.new_empty((image_count, *result.shape[1:]))
+                elif result.shape[1:] != output.shape[1:]:
+                    raise ValueError(
+                        "Batched node function returned inconsistent frame shapes: "
+                        f"expected {(1, *output.shape[1:])}, got {tuple(result.shape)}"
+                    )
+
+                output[index].copy_(result[0])
+                del result
+
+                # Large HDR frames create PIL/NumPy/Torch temporaries outside the
+                # Python tensor allocator.  Release each frame before processing the
+                # next one instead of retaining a list and then torch.cat'ing it.
+                if output[index].numel() >= 16_777_216:
+                    gc.collect()
+
+            if output is None:
+                raise ValueError("HDR Effects received an empty image batch")
+            return (output, )
+        finally:
+            output = None
+            if image_count > 1:
                 gc.collect()
     return wrapper
 
