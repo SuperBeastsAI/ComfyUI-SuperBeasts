@@ -13,6 +13,7 @@ import importlib.util
 import sys
 import threading
 import contextlib
+import ctypes
 import gc
 from collections import OrderedDict
 
@@ -812,6 +813,159 @@ def _safe_positive_int_env(name: str, default: int, minimum: int = 1) -> int:
         return max(minimum, default)
 
 
+def _safe_bool_env(name: str, default: bool = False) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() not in {"", "0", "false", "no", "off"}
+
+
+def _hdr_debug(msg: str) -> None:
+    if _safe_bool_env("SUPERBEASTS_HDR_DEBUG", False):
+        print(f"[SuperBeasts][HDR] {msg}")
+
+
+_LIBC_MALLOC_TRIM = None
+_LIBC_MALLOC_TRIM_PROBED = False
+
+
+def _trim_native_heap() -> None:
+    """Return freed NumPy/Pillow native heap pages to WSL when available.
+
+    Repeated large HDR frames can leave glibc arenas resident even after Python
+    references are gone.  Under WSL this can turn the third or fourth queued
+    generation into a whole-VM wedge instead of a Python MemoryError.  The call
+    is Linux/glibc-only and silently skipped elsewhere.
+    """
+    global _LIBC_MALLOC_TRIM, _LIBC_MALLOC_TRIM_PROBED
+    if not _safe_bool_env("SUPERBEASTS_HDR_MALLOC_TRIM", True):
+        return
+    if not sys.platform.startswith("linux"):
+        return
+    try:
+        if not _LIBC_MALLOC_TRIM_PROBED:
+            _LIBC_MALLOC_TRIM_PROBED = True
+            try:
+                libc = ctypes.CDLL("libc.so.6")
+                _LIBC_MALLOC_TRIM = getattr(libc, "malloc_trim", None)
+                if _LIBC_MALLOC_TRIM is not None:
+                    _LIBC_MALLOC_TRIM.argtypes = [ctypes.c_size_t]
+                    _LIBC_MALLOC_TRIM.restype = ctypes.c_int
+            except Exception:
+                _LIBC_MALLOC_TRIM = None
+        if _LIBC_MALLOC_TRIM is not None:
+            _LIBC_MALLOC_TRIM(0)
+    except Exception:
+        pass
+
+
+def _hdr_rows_per_chunk(width: int) -> int:
+    max_chunk_pixels = _safe_positive_int_env("SUPERBEASTS_HDR_CHUNK_PIXELS", 262_144, 4096)
+    return max(1, max_chunk_pixels // max(1, int(width)))
+
+
+def _tensor_image_to_rgb_u8_chunked(image: torch.Tensor) -> np.ndarray:
+    """Convert one Comfy IMAGE frame to an RGB uint8 ndarray with bounded temps."""
+    tensor = image.detach().cpu()
+    if tensor.ndim == 4:
+        if tensor.shape[0] != 1:
+            raise ValueError(f"Expected a single frame, got tensor shape {tuple(tensor.shape)}")
+        tensor = tensor[0]
+    if tensor.ndim == 2:
+        tensor = tensor.unsqueeze(-1)
+    if tensor.ndim != 3:
+        raise ValueError(f"Expected image tensor with shape HxWxC, got {tuple(tensor.shape)}")
+
+    height, width, channels = (int(v) for v in tensor.shape)
+    if channels not in (1, 3, 4):
+        raise ValueError(f"Expected 1, 3, or 4 channels, got tensor shape {tuple(tensor.shape)}")
+
+    arr = np.ascontiguousarray(tensor.numpy())
+    rgb_u8 = np.empty((height, width, 3), dtype=np.uint8)
+    rows_per_chunk = _hdr_rows_per_chunk(width)
+
+    for y0 in range(0, height, rows_per_chunk):
+        y1 = min(height, y0 + rows_per_chunk)
+        chunk = arr[y0:y1]
+        if channels == 1:
+            src = chunk[..., 0]
+            tmp = np.clip(src * 255.0, 0.0, 255.0).astype(np.uint8)
+            rgb_u8[y0:y1, :, 0] = tmp
+            rgb_u8[y0:y1, :, 1] = tmp
+            rgb_u8[y0:y1, :, 2] = tmp
+            del tmp
+        else:
+            tmp = np.clip(chunk[..., :3] * 255.0, 0.0, 255.0).astype(np.uint8)
+            rgb_u8[y0:y1] = tmp
+            del tmp
+        del chunk
+
+    return rgb_u8
+
+
+def _rgb_luma_float(rgb: np.ndarray) -> np.ndarray:
+    rgb_f = np.asarray(rgb, dtype=np.float32)
+    return rgb_f[..., 0] * np.float32(0.299) + rgb_f[..., 1] * np.float32(0.587) + rgb_f[..., 2] * np.float32(0.114)
+
+
+def _rgb_luma_sum(rgb_u8: np.ndarray) -> float:
+    height, width = rgb_u8.shape[:2]
+    rows_per_chunk = _hdr_rows_per_chunk(width)
+    total = 0.0
+    for y0 in range(0, height, rows_per_chunk):
+        y1 = min(height, y0 + rows_per_chunk)
+        total += float(_rgb_luma_float(rgb_u8[y0:y1]).sum(dtype=np.float64))
+    return total
+
+
+def _postprocess_rgb_u8_to_tensor_chunked(
+    rgb_u8: np.ndarray,
+    out_frame: torch.Tensor,
+    contrast: float,
+    enhance_color: float,
+) -> None:
+    """Apply PIL-equivalent contrast/color intent and write directly to output."""
+    if out_frame.device.type != "cpu":
+        raise ValueError("HDR Effects writes CPU IMAGE tensors")
+    if out_frame.dtype != torch.float32:
+        raise ValueError(f"HDR Effects expected float32 output, got {out_frame.dtype}")
+
+    height, width = rgb_u8.shape[:2]
+    if tuple(out_frame.shape) != (height, width, 3):
+        raise ValueError(f"Output frame shape mismatch: expected {(height, width, 3)}, got {tuple(out_frame.shape)}")
+
+    out_np = out_frame.numpy()
+    rows_per_chunk = _hdr_rows_per_chunk(width)
+    contrast_factor = np.float32(1.0 + float(contrast))
+    color_factor = np.float32(1.0 + float(enhance_color) * 0.2)
+
+    # PIL ImageEnhance.Contrast uses the mean luminance of the whole image as
+    # the degenerate image.  Compute it before chunked writes so the result is
+    # independent of chunk boundaries.
+    mean_luma = np.float32(_rgb_luma_sum(rgb_u8) / max(1, height * width) + 0.5)
+
+    for y0 in range(0, height, rows_per_chunk):
+        y1 = min(height, y0 + rows_per_chunk)
+        work = rgb_u8[y0:y1].astype(np.float32)
+
+        if contrast_factor != 1.0:
+            work *= contrast_factor
+            work += mean_luma * np.float32(1.0 - contrast_factor)
+            np.clip(work, 0.0, 255.0, out=work)
+
+        if color_factor != 1.0:
+            gray = _rgb_luma_float(work)
+            work *= color_factor
+            work += gray[..., None] * np.float32(1.0 - color_factor)
+            np.clip(work, 0.0, 255.0, out=work)
+            del gray
+
+        work *= np.float32(1.0 / 255.0)
+        np.clip(work, 0.0, 1.0, out=work)
+        out_np[y0:y1] = work
+        del work
+
+
 def _srgb_to_linear(rgb):
     rgb = np.asarray(rgb, dtype=np.float32)
     out = rgb / np.float32(12.92)
@@ -1076,27 +1230,21 @@ def _lab_chunk_to_rgb_u8(l_uint8: np.ndarray, a: np.ndarray, b: np.ndarray) -> n
     return out
 
 
-def _apply_hdr_effect_chunked(
-    img: Image.Image,
+def _apply_hdr_effect_u8_chunked(
+    rgb_u8: np.ndarray,
     hdr_intensity: float,
     shadow_intensity: float,
     highlight_intensity: float,
     gamma_intensity: float,
-) -> Image.Image:
-    """Apply HDR luminance adjustment with bounded native working memory."""
-    rgb_img = img if img.mode == 'RGB' else img.convert('RGB')
-    rgb_u8 = np.ascontiguousarray(np.asarray(rgb_img, dtype=np.uint8))
+) -> np.ndarray:
+    """Apply HDR luminance adjustment to an RGB uint8 array with bounded temps."""
+    rgb_u8 = np.ascontiguousarray(rgb_u8, dtype=np.uint8)
     if rgb_u8.ndim != 3 or rgb_u8.shape[2] != 3:
         raise ValueError(f"Expected RGB image array with shape HxWx3, got {rgb_u8.shape}")
 
     height, width = rgb_u8.shape[:2]
     rgb_out = np.empty((height, width, 3), dtype=np.uint8)
-
-    # Lower than the legacy 1M-pixel chunk because this path may run after a
-    # large sampler while CUDA/WSL memory pressure is already high. Users can
-    # raise it if they prefer throughput over peak-memory margin.
-    max_chunk_pixels = _safe_positive_int_env("SUPERBEASTS_HDR_CHUNK_PIXELS", 262_144, 4096)
-    rows_per_chunk = max(1, max_chunk_pixels // max(1, width))
+    rows_per_chunk = _hdr_rows_per_chunk(width)
 
     for y0 in range(0, height, rows_per_chunk):
         y1 = min(height, y0 + rows_per_chunk)
@@ -1131,15 +1279,31 @@ def _apply_hdr_effect_chunked(
         stable_a, stable_b = _stabilize_dark_lab_chroma(rgb_u8[y0:y1], l_uint8, adjusted_l, a, b)
         rgb_out[y0:y1] = _lab_chunk_to_rgb_u8(adjusted_l, stable_a, stable_b)
 
-        # Python loop locals otherwise keep the previous chunk's native NumPy
-        # buffers alive until the next reassignment.  Under repeated ComfyUI/WSL
-        # runs, that needlessly raises the peak around this node and can wedge the
-        # prompt worker instead of producing a Python MemoryError.
         del (
             rgb, linear_rgb, r, g, bl, x, y, z, fx, fy, fz, lightness,
             a, b, l_uint8, adjusted_l, stable_a, stable_b,
         )
 
+    return rgb_out
+
+
+def _apply_hdr_effect_chunked(
+    img: Image.Image,
+    hdr_intensity: float,
+    shadow_intensity: float,
+    highlight_intensity: float,
+    gamma_intensity: float,
+) -> Image.Image:
+    """Compatibility wrapper around the low-memory uint8 HDR path."""
+    rgb_img = img if img.mode == 'RGB' else img.convert('RGB')
+    rgb_u8 = np.ascontiguousarray(np.asarray(rgb_img, dtype=np.uint8))
+    rgb_out = _apply_hdr_effect_u8_chunked(
+        rgb_u8,
+        hdr_intensity=hdr_intensity,
+        shadow_intensity=shadow_intensity,
+        highlight_intensity=highlight_intensity,
+        gamma_intensity=gamma_intensity,
+    )
     return Image.fromarray(rgb_out, mode='RGB')
 
 
@@ -1249,10 +1413,11 @@ def apply_to_batch(func):
                 del result
 
                 # Large HDR frames create PIL/NumPy/Torch temporaries outside the
-                # Python tensor allocator.  Release each frame before processing the
+                # Python tensor allocator. Release each frame before processing the
                 # next one instead of retaining a list and then torch.cat'ing it.
                 if output[index].numel() >= 16_777_216:
                     gc.collect()
+                    _trim_native_heap()
 
             if output is None:
                 raise ValueError("HDR Effects received an empty image batch")
@@ -1261,6 +1426,7 @@ def apply_to_batch(func):
             output = None
             if image_count > 1:
                 gc.collect()
+                _trim_native_heap()
     return wrapper
 
 class HDREffects:
@@ -1281,40 +1447,70 @@ class HDREffects:
     FUNCTION = 'apply_hdr2'
     CATEGORY = 'SuperBeastsAI/Image'
     
-    @apply_to_batch
     def apply_hdr2(self, image, hdr_intensity=0.5, shadow_intensity=0.25, highlight_intensity=0.75, gamma_intensity=0.25, contrast=0.1, enhance_color=0.25):
-        # Force a stable RGB input mode. The HDR/LAB conversion is deliberately
-        # done through the bounded chunked path below; repeated ComfyUI runs can
-        # otherwise accumulate large native NumPy/Pillow allocations and wedge
-        # the prompt worker under WSL memory pressure.
-        img = tensor2pil(image).convert('RGB')
-        img_adjusted = None
-        contrast_adjusted = None
-        color_adjusted = None
+        # Process the whole batch here instead of using @apply_to_batch.  For
+        # 3800x5568 frames, the generic wrapper's per-frame return tensor would
+        # overlap with the final output tensor.  This path writes each frame
+        # directly into the preallocated output and avoids PIL ImageEnhance's
+        # full-frame intermediate images.
+        if image is None:
+            raise ValueError("HDR Effects expected an IMAGE tensor, got None")
+        if not isinstance(image, torch.Tensor):
+            raise TypeError(f"HDR Effects expected a torch.Tensor IMAGE, got {type(image)!r}")
+        if image.ndim == 3:
+            image = image.unsqueeze(0)
+        if image.ndim != 4:
+            raise ValueError(f"HDR Effects expected IMAGE shape BHWC, got {tuple(image.shape)}")
+        if image.shape[-1] not in (1, 3, 4):
+            raise ValueError(f"HDR Effects expected 1, 3, or 4 channels, got shape {tuple(image.shape)}")
+
+        image_count = int(image.shape[0])
+        if image_count == 0:
+            raise ValueError("HDR Effects received an empty image batch")
+
+        height = int(image.shape[1])
+        width = int(image.shape[2])
+        output = None
+        rgb_u8 = None
+        hdr_u8 = None
 
         try:
+            output = torch.empty((image_count, height, width, 3), dtype=torch.float32, device="cpu")
             with _HDR_EFFECTS_LOCK:
-                img_adjusted = _apply_hdr_effect_chunked(
-                    img,
-                    hdr_intensity=hdr_intensity,
-                    shadow_intensity=shadow_intensity,
-                    highlight_intensity=highlight_intensity,
-                    gamma_intensity=gamma_intensity,
-                )
+                for index in range(image_count):
+                    _hdr_debug(f"frame {index + 1}/{image_count}: tensor -> rgb_u8 start shape={tuple(image[index].shape)}")
+                    rgb_u8 = _tensor_image_to_rgb_u8_chunked(image[index])
+                    _hdr_debug(f"frame {index + 1}/{image_count}: HDR LAB chunks start")
+                    hdr_u8 = _apply_hdr_effect_u8_chunked(
+                        rgb_u8,
+                        hdr_intensity=hdr_intensity,
+                        shadow_intensity=shadow_intensity,
+                        highlight_intensity=highlight_intensity,
+                        gamma_intensity=gamma_intensity,
+                    )
+                    rgb_u8 = None
 
-            # Enhance contrast
-            contrast_adjusted = ImageEnhance.Contrast(img_adjusted).enhance(1 + contrast)
+                    _hdr_debug(f"frame {index + 1}/{image_count}: contrast/color -> output tensor start")
+                    _postprocess_rgb_u8_to_tensor_chunked(
+                        hdr_u8,
+                        output[index],
+                        contrast=contrast,
+                        enhance_color=enhance_color,
+                    )
+                    hdr_u8 = None
 
-            # Enhance color saturation
-            color_adjusted = ImageEnhance.Color(contrast_adjusted).enhance(1 + enhance_color * 0.2)
+                    gc.collect()
+                    _trim_native_heap()
+                    _hdr_debug(f"frame {index + 1}/{image_count}: done")
 
-            return pil2tensor(color_adjusted)
-        finally:
-            for pil_img in (color_adjusted, contrast_adjusted, img_adjusted, img):
-                if pil_img is not None:
-                    with contextlib.suppress(Exception):
-                        pil_img.close()
+            return (output, )
+        except Exception:
+            output = None
+            rgb_u8 = None
+            hdr_u8 = None
             gc.collect()
+            _trim_native_heap()
+            raise
 
 class MakeResizedMaskBatch:
     DESCRIPTION = "Combine up to 12 individual masks/batches into one mask batch, automatically sizing/cropping each mask to the requested width/height. Useful for building consistent video masks."
