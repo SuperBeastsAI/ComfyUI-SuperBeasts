@@ -2,6 +2,7 @@
 
 
 ## 🆕 Recent Updates
+- **14/06/2026** – Version **1.3.2**: HDR Effects stability fix (no more Pillow/LittleCMS segfaults), model-cache hardening, and lower peak memory for HDR and Super Pop Color Adjustment. Thanks [@xmarre](https://github.com/xmarre) ([#14](https://github.com/SuperBeastsAI/ComfyUI-SuperBeasts/pull/14)).
 - **26/07/2025** –  New ComfyUI node version 1.2 which now includes *Super Pop Color Adjustment* model with v2.0 safetensors version.
 - **20/07/2025** –  New ComfyUI node version 1.1 which now includes *Super Pop Color Adjustment* model + with onnx model released.
 ---

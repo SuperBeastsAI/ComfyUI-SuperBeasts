@@ -1,6 +1,12 @@
 # Changelog
 All notable changes to this project will be documented here. Dates in **DD/MM/YYYY**.
 
+## 14/06/2026
+### Fixed
+- **HDR Effects** – replaced Pillow `ImageCms` LAB conversion with a pure NumPy path to stop hard segfaults on large frames (thanks [@xmarre](https://github.com/xmarre), [#14](https://github.com/SuperBeastsAI/ComfyUI-SuperBeasts/pull/14)).
+- Hardened model cache and ONNX Runtime threading to reduce prompt-worker freezes under repeated runs.
+- Reduced peak memory for HDR batch processing and Super Pop Color Adjustment blending.
+
 ## 19/07/2025
 ### Added
 - Released *Super Pop Color Adjustment* node + ONNX model (automatic weight fetch).
