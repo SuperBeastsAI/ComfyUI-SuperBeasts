@@ -9,6 +9,7 @@ license = { file = "LICENSE" }
 Repository = "https://github.com/SuperBeastsAI/ComfyUI-SuperBeasts"
 "Super Pop Color Adjustement Model (license)" = "https://github.com/SuperBeastsAI/SuperBeastsAI-Models/tree/main/SuperPopColorAdjustment"
 #  Used by Comfy Registry https://comfyregistry.org
+#  Version bumps on master auto-publish via .github/workflows/publish.yml
 
 [tool.comfy]
 PublisherId = "superbeastsai"
